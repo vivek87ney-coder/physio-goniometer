@@ -3,7 +3,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Goniometer">
 <title>Physio Goniometer</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -44,6 +50,11 @@ button:active{filter:brightness(1.4)}
 #camHint{font-size:13px;color:#888;text-align:center;margin:4px 0}
 </style></head><body>
 <h1>Physio Goniometer / Inclinometer</h1>
+<div id="pwaBar" style="display:flex;gap:8px;align-items:center;margin:6px 0;font-size:13px">
+<span id="offState" style="flex:1;color:#888">● Checking offline support…</span>
+<button id="installBtn" style="display:none;flex:none;font-size:14px;padding:8px 12px;background:#0a84ff">Install app</button></div>
+<div id="iosHint" style="display:none;font-size:13px;background:#1c1c1e;border:1px solid #444;border-radius:10px;padding:8px;margin:4px 0">On iPhone: tap <b>Share</b> <span style="font-size:15px">⎋</span> then <b>Add to Home Screen</b> to install and use offline. <a href="#" id="iosX" style="color:#9cf">Dismiss</a></div>
+
 <div class="tabs" id="tabs"><button data-m="sensor" class="on">Sensor</button><button data-m="camera">Camera</button></div>
 <div class="row"><select id="joint" aria-label="Joint and movement"></select></div>
 <div class="row">
@@ -157,9 +168,6 @@ $("csv").onclick=function(){var l=load();if(!l.length){alert("Log is empty.");re
  try{var file=new File([blob],name,{type:"text/csv"});if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(function(){});return}}catch(e){}
  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)};
 drawLog();render();
-// Offline: cache via service worker when served from a file named sw.js is not available in single-file mode; use Cache API from page instead.
-if("caches" in window&&location.protocol==="https:"){caches.open("gonio-v2").then(function(c){c.add(location.href).catch(function(){})})}
-if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}
 window.__gonio={st:st,val:val};window.__J=J;
 })();
 </script>
@@ -221,6 +229,22 @@ function up(){drag=-1;loupe=null;draw()}cv.addEventListener("pointerup",up);cv.a
 $("camPng").onclick=function(){if(!img)return;loupe=null;draw();var sel=$("joint"),j=window.__J?window.__J[+sel.value]:["",""];
  var a=document.createElement("a");a.download="goniometer_"+(j[0]+"_"+j[1]).replace(/\W+/g,"_")+"_"+new Date().toISOString().slice(0,19).replace(/:/g,"")+".png";
  cv.toBlob(function(b){a.href=URL.createObjectURL(b);document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},1000)},"image/png")};
+})();
+</script>
+<script>
+(function(){var st=document.getElementById("offState"),ib=document.getElementById("installBtn"),dp=null;
+function set(t,c){st.textContent="● "+t;st.style.color=c}
+function upd(){if(!navigator.onLine)set("Offline – running from cache","#ff9f0a")}
+window.addEventListener("online",function(){chk()});window.addEventListener("offline",upd);
+function chk(){if(!("serviceWorker" in navigator)||!window.isSecureContext){set("Offline mode needs HTTPS / a modern browser","#ff6b6b");return}
+ navigator.serviceWorker.ready.then(function(r){caches.keys().then(function(k){set(k.length?"Offline ready":"Preparing offline…",k.length?"#30d158":"#888");upd()})})}
+if("serviceWorker" in navigator&&window.isSecureContext){navigator.serviceWorker.register("sw.js",{scope:"./"}).then(function(){chk()}).catch(function(e){set("Offline setup failed: "+e.message,"#ff6b6b")})}else chk();
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;ib.style.display=""});
+ib.onclick=function(){if(!dp)return;dp.prompt();dp.userChoice.finally(function(){dp=null;ib.style.display="none"})};
+window.addEventListener("appinstalled",function(){ib.style.display="none"});
+var ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),standalone=navigator.standalone||matchMedia("(display-mode: standalone)").matches;
+if(ios&&!standalone&&!localStorage.getItem("iosHintX"))document.getElementById("iosHint").style.display="";
+document.getElementById("iosX").onclick=function(e){e.preventDefault();localStorage.setItem("iosHintX","1");document.getElementById("iosHint").style.display="none"};
 })();
 </script>
 </body></html>

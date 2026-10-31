@@ -3,6 +3,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="CamGonio">
 <title>Camera Goniometer</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -31,6 +38,11 @@ input[type=range]{flex:1;accent-color:#ffd400}
 .small{font-size:15px;padding:12px 6px}
 </style></head><body>
 <h1>Camera Universal Goniometer</h1>
+<div id="pwaBar" style="display:flex;gap:8px;align-items:center;margin:6px 0;font-size:13px">
+<span id="offState" style="flex:1;color:#888">● Checking offline support…</span>
+<button id="installBtn" style="display:none;flex:none;font-size:14px;padding:8px 12px;background:#0a84ff">Install app</button></div>
+<div id="iosHint" style="display:none;font-size:13px;background:#1c1c1e;border:1px solid #444;border-radius:10px;padding:8px;margin:4px 0">On iPhone: tap <b>Share</b> <span style="font-size:15px">⎋</span> then <b>Add to Home Screen</b> to install and use offline. <a href="#" id="iosX" style="color:#9cf">Dismiss</a></div>
+
 <div class="row"><select id="joint"></select></div>
 <div class="row"><div class="seg" id="side"><button data-v="Left">Left</button><button data-v="Right" class="on">Right</button></div>
 <div class="seg" id="conv"><button data-v="inc" class="on">Included</button><button data-v="sup">180 − angle</button></div></div>
@@ -137,6 +149,21 @@ $("png").onclick=function(){S.lp=null;draw();var j=J[+sel.value],k=u();ctx.font=
  ctx.lineWidth=5*k;ctx.strokeStyle="#000";ctx.strokeText(t,14*k,cv.height-14*k);ctx.fillStyle="#fff";ctx.fillText(t,14*k,cv.height-14*k);
  cv.toBlob(function(b){dl(b,"goniometer_"+(S.side+"_"+j[0]+"_"+j[1]).replace(/\W+/g,"_")+"_"+Date.now()+".png");draw()},"image/png")};
 drawLog();draw();
-if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(function(){});
 })();
-</script></body></html>
+</script><script>
+(function(){var st=document.getElementById("offState"),ib=document.getElementById("installBtn"),dp=null;
+function set(t,c){st.textContent="● "+t;st.style.color=c}
+function upd(){if(!navigator.onLine)set("Offline – running from cache","#ff9f0a")}
+window.addEventListener("online",function(){chk()});window.addEventListener("offline",upd);
+function chk(){if(!("serviceWorker" in navigator)||!window.isSecureContext){set("Offline mode needs HTTPS / a modern browser","#ff6b6b");return}
+ navigator.serviceWorker.ready.then(function(r){caches.keys().then(function(k){set(k.length?"Offline ready":"Preparing offline…",k.length?"#30d158":"#888");upd()})})}
+if("serviceWorker" in navigator&&window.isSecureContext){navigator.serviceWorker.register("sw.js",{scope:"./"}).then(function(){chk()}).catch(function(e){set("Offline setup failed: "+e.message,"#ff6b6b")})}else chk();
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;ib.style.display=""});
+ib.onclick=function(){if(!dp)return;dp.prompt();dp.userChoice.finally(function(){dp=null;ib.style.display="none"})};
+window.addEventListener("appinstalled",function(){ib.style.display="none"});
+var ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),standalone=navigator.standalone||matchMedia("(display-mode: standalone)").matches;
+if(ios&&!standalone&&!localStorage.getItem("iosHintX"))document.getElementById("iosHint").style.display="";
+document.getElementById("iosX").onclick=function(e){e.preventDefault();localStorage.setItem("iosHintX","1");document.getElementById("iosHint").style.display="none"};
+})();
+</script>
+</body></html>

@@ -32,18 +32,39 @@ button:active{filter:brightness(1.4)}
 .del{background:#400;color:#f88;padding:6px 10px;font-size:14px;flex:none}
 .small{font-size:15px;padding:12px 6px}
 .spacer{flex:1}
+.tabs{display:flex;gap:0;border:2px solid #444;border-radius:12px;overflow:hidden;margin:4px 0}
+.tabs button{border-radius:0;background:#111;color:#ccc;padding:12px}
+.tabs button.on{background:#0a84ff;color:#fff}
+#camUI{display:none}
+#camWrap{position:relative;background:#0a0a0a;border:3px solid #222;border-radius:16px;overflow:hidden;touch-action:none}
+#video,#cv{width:100%;display:block}
+#cv{display:none;touch-action:none}
+#camAngle{text-align:center;font-size:min(16vw,72px);font-weight:800;color:#0f8;font-variant-numeric:tabular-nums}
+#camSub{text-align:center;font-size:14px;color:#aaa}
+#camHint{font-size:13px;color:#888;text-align:center;margin:4px 0}
 </style></head><body>
 <h1>Physio Goniometer / Inclinometer</h1>
+<div class="tabs" id="tabs"><button data-m="sensor" class="on">Sensor</button><button data-m="camera">Camera</button></div>
 <div class="row"><select id="joint" aria-label="Joint and movement"></select></div>
 <div class="row">
  <div class="seg" id="side"><button data-v="L">Left</button><button data-v="R" class="on">Right</button></div>
  <div class="seg" id="axis"><button data-v="portrait" class="on">Portrait</button><button data-v="landscape">Landscape</button></div>
 </div>
 <div id="ref"></div>
+<div id="sensorUI">
 <div id="readout"><div id="angle">--.-°</div><div id="status">Tap Start to enable sensors</div><div id="flag"></div></div>
 <div class="spacer"></div>
 <div class="row"><button id="start">Start</button></div>
 <div class="row"><button id="zero">Zero</button><button id="hold">Hold</button></div>
+</div>
+<div id="camUI">
+<div id="camAngle">--.-°</div><div id="camSub">Capture or load a photo, then tap 3 points</div><div id="flag2" style="text-align:center;font-size:14px;min-height:18px"></div>
+<div id="camWrap"><video id="video" playsinline muted autoplay></video><canvas id="cv"></canvas></div>
+<div id="camHint">1 proximal landmark · 2 joint axis · 3 distal landmark — drag to adjust</div>
+<div class="row"><button id="camLive" style="background:#0a84ff">Live camera</button><button id="camCap" style="background:#ffd400;color:#000">Capture</button></div>
+<div class="row"><button class="small" id="camFileBtn">Photo / Upload</button><input type="file" id="camFile" accept="image/*" capture="environment" hidden><button class="small" id="camReset">Reset points</button></div>
+<div class="row"><div class="seg" id="camConv"><button data-v="inc" class="on">Included</button><button data-v="sup">180 − angle</button></div><button class="small" id="camPng" style="flex:.7">PNG</button></div>
+</div>
 <div class="row"><input id="pt" placeholder="Patient initials (optional)" maxlength="8" autocapitalize="characters"><button id="save" style="flex:.6">Save</button></div>
 <div class="row"><button class="small" id="csv">Export CSV</button><button class="small" id="clear">Clear log</button></div>
 <div id="log"></div>
@@ -121,25 +142,85 @@ function store(l){localStorage.setItem("gonio_log",JSON.stringify(l))}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function drawLog(){var l=load();if(!l.length){$("log").innerHTML="<p style='color:#666'>No saved readings.</p>";return}
  var h="<table>";l.slice().reverse().forEach(function(r){var d=new Date(r.t);
-  h+="<tr><td>"+esc(d.toLocaleDateString())+" "+esc(d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))+"<br><small>"+esc(r.pt||"—")+" · "+esc(r.side)+" "+esc(r.joint)+" "+esc(r.mov)+"</small></td><td class='a'>"+r.angle.toFixed(1)+"°</td><td><button class='del' data-id='"+r.id+"'>✕</button></td></tr>"});
+  h+="<tr><td>"+esc(d.toLocaleDateString())+" "+esc(d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))+"<br><small>"+esc(r.pt||"—")+" · "+esc(r.side)+" "+esc(r.joint)+" "+esc(r.mov)+(r.method==="camera"?" · 📷":"")+"</small></td><td class='a'>"+r.angle.toFixed(1)+"°</td><td><button class='del' data-id='"+r.id+"'>✕</button></td></tr>"});
  $("log").innerHTML=h+"</table>";
  [].forEach.call(document.querySelectorAll(".del"),function(b){b.onclick=function(){if(!confirm("Delete this reading?"))return;store(load().filter(function(r){return String(r.id)!==b.dataset.id}));drawLog()}})}
-$("save").onclick=function(){var v=val();if(v==null){alert("No reading yet. Tap Start.");return}var j=cur();
- var l=load();l.push({id:Date.now(),t:new Date().toISOString(),pt:$("pt").value.trim().toUpperCase(),side:st.side==="L"?"Left":"Right",joint:j[0],mov:j[1],angle:Math.round(Math.abs(v)*10)/10,signed:Math.round(v*10)/10,axis:st.axis,normal:j[2]==null?"":j[2]+"-"+j[3]});
+$("save").onclick=function(){var v=window.__mode==="camera"?window.__camVal():val();if(v==null){alert("No reading yet. Tap Start.");return}var j=cur();
+ var l=load();l.push({id:Date.now(),t:new Date().toISOString(),pt:$("pt").value.trim().toUpperCase(),side:st.side==="L"?"Left":"Right",joint:j[0],mov:j[1],angle:Math.round(Math.abs(v)*10)/10,signed:Math.round(v*10)/10,axis:window.__mode==="camera"?"":st.axis,method:window.__mode==="camera"?"camera":"sensor",normal:j[2]==null?"":j[2]+"-"+j[3]});
  store(l);drawLog();buzz()};
 $("clear").onclick=function(){if(confirm("Delete ALL saved readings?")){store([]);drawLog()}};
 $("csv").onclick=function(){var l=load();if(!l.length){alert("Log is empty.");return}
  var q=function(s){return'"'+String(s).replace(/"/g,'""')+'"'};
- var rows=[["Timestamp","Patient","Side","Joint","Movement","Angle_deg","Signed_deg","Axis","AAOS_normal_deg"]].concat(l.map(function(r){return[r.t,r.pt,r.side,r.joint,r.mov,r.angle,r.signed,r.axis,r.normal]}));
+ var rows=[["Timestamp","Patient","Side","Joint","Movement","Angle_deg","Signed_deg","Axis","Method","AAOS_normal_deg"]].concat(l.map(function(r){return[r.t,r.pt,r.side,r.joint,r.mov,r.angle,r.signed,r.axis,r.method||"sensor",r.normal]}));
  var csv=rows.map(function(r){return r.map(q).join(",")}).join("\r\n");
  var blob=new Blob(["\ufeff"+csv],{type:"text/csv"});var name="goniometer_"+new Date().toISOString().slice(0,10)+".csv";
  try{var file=new File([blob],name,{type:"text/csv"});if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(function(){});return}}catch(e){}
  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)};
 drawLog();render();
 // Offline: cache via service worker when served from a file named sw.js is not available in single-file mode; use Cache API from page instead.
-if("caches" in window&&location.protocol==="https:"){caches.open("gonio-v1").then(function(c){c.add(location.href).catch(function(){})})}
+if("caches" in window&&location.protocol==="https:"){caches.open("gonio-v2").then(function(c){c.add(location.href).catch(function(){})})}
 if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}
-window.__gonio={st:st,val:val};
+window.__gonio={st:st,val:val};window.__J=J;
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+window.__mode="sensor";
+var video=$("video"),cv=$("cv"),ctx=cv.getContext("2d"),img=null,pts=[],drag=-1,conv="inc",stream=null,loupe=null;
+[].forEach.call($("tabs").children,function(b){b.onclick=function(){window.__mode=b.dataset.m;
+ [].forEach.call($("tabs").children,function(x){x.classList.toggle("on",x===b)});
+ $("sensorUI").style.display=b.dataset.m==="sensor"?"":"none";$("camUI").style.display=b.dataset.m==="camera"?"block":"none";
+ $("axis").style.visibility=b.dataset.m==="camera"?"hidden":"";if(b.dataset.m!=="camera")stop();}});
+[].forEach.call($("camConv").children,function(b){b.onclick=function(){conv=b.dataset.v;[].forEach.call($("camConv").children,function(x){x.classList.toggle("on",x===b)});draw()}});
+function stop(){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}}
+$("camLive").onclick=function(){
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$("camSub").textContent="Live camera unavailable – use Photo / Upload";return}
+ navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920}},audio:false}).then(function(s){stop();stream=s;video.srcObject=s;video.style.display="block";cv.style.display="none";video.play();$("camSub").textContent="Aim, then tap Capture"})
+ .catch(function(e){$("camSub").textContent="Camera error: "+e.name+" – use Photo / Upload"})};
+$("camCap").onclick=function(){if(!stream||!video.videoWidth){$("camSub").textContent="Start Live camera first";return}
+ var c=document.createElement("canvas");c.width=video.videoWidth;c.height=video.videoHeight;c.getContext("2d").drawImage(video,0,0);
+ var im=new Image();im.onload=function(){setImg(im)};im.src=c.toDataURL("image/jpeg",.92);stop()};
+$("camFileBtn").onclick=function(){$("camFile").click()};
+$("camFile").onchange=function(e){var f=e.target.files[0];if(!f)return;var im=new Image();im.onload=function(){setImg(im)};im.src=URL.createObjectURL(f);e.target.value=""};
+$("camReset").onclick=function(){pts=[];draw()};
+function setImg(im){img=im;pts=[];cv.width=im.naturalWidth;cv.height=im.naturalHeight;video.style.display="none";cv.style.display="block";$("camSub").textContent="Tap: proximal, joint axis, distal";draw()}
+window.__camSetImg=setImg;
+function ang(){if(pts.length<3)return null;var a=pts[0],b=pts[1],c=pts[2];
+ var a1=Math.atan2(a.y-b.y,a.x-b.x),a2=Math.atan2(c.y-b.y,c.x-b.x);var d=Math.abs(a1-a2)*180/Math.PI;if(d>180)d=360-d;return d}
+window.__camVal=function(){var d=ang();if(d==null)return null;return conv==="inc"?d:180-d};
+window.__camPts=function(p){if(p)pts=p;draw();return pts};
+function draw(){if(!img)return;var W=cv.width,u=Math.max(W,cv.height)/400;
+ ctx.drawImage(img,0,0);ctx.lineCap="round";
+ if(pts.length>1){ctx.lineWidth=4*u;ctx.strokeStyle="#ffd400";ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);ctx.lineTo(pts[1].x,pts[1].y);if(pts[2])ctx.lineTo(pts[2].x,pts[2].y);ctx.stroke()}
+ var d=ang();
+ if(d!=null){var b=pts[1],a1=Math.atan2(pts[0].y-b.y,pts[0].x-b.x),a2=Math.atan2(pts[2].y-b.y,pts[2].x-b.x),diff=a2-a1;
+  while(diff>Math.PI)diff-=2*Math.PI;while(diff<-Math.PI)diff+=2*Math.PI;
+  ctx.strokeStyle="#0f8";ctx.lineWidth=3*u;ctx.beginPath();ctx.arc(b.x,b.y,30*u,a1,a1+diff,diff<0);ctx.stroke();
+  var v=window.__camVal();ctx.font="bold "+(22*u)+"px system-ui";ctx.fillStyle="#000";ctx.strokeStyle="#000";ctx.lineWidth=5*u;
+  var t=v.toFixed(1)+"°",mid=a1+diff/2,tx=b.x+Math.cos(mid)*48*u-20*u,ty=b.y+Math.sin(mid)*48*u+8*u;ctx.strokeText(t,tx,ty);ctx.fillStyle="#0f8";ctx.fillText(t,tx,ty)}
+ pts.forEach(function(p,i){ctx.beginPath();ctx.arc(p.x,p.y,9*u,0,7);ctx.fillStyle=i===1?"#ff3b30":"#0a84ff";ctx.fill();ctx.lineWidth=2*u;ctx.strokeStyle="#fff";ctx.stroke();
+  ctx.fillStyle="#fff";ctx.font="bold "+(12*u)+"px system-ui";ctx.fillText(String(i+1),p.x-4*u,p.y+4*u)});
+ if(loupe){var R=70*u,z=3,lx=loupe.x<W/2?W-R-10*u:R+10*u,ly=R+10*u;
+  ctx.save();ctx.beginPath();ctx.arc(lx,ly,R,0,7);ctx.clip();ctx.drawImage(img,loupe.x-R/z,loupe.y-R/z,2*R/z,2*R/z,lx-R,ly-R,2*R,2*R);
+  ctx.strokeStyle="#ff3b30";ctx.lineWidth=1.5*u;ctx.beginPath();ctx.moveTo(lx-R,ly);ctx.lineTo(lx+R,ly);ctx.moveTo(lx,ly-R);ctx.lineTo(lx,ly+R);ctx.stroke();ctx.restore();
+  ctx.beginPath();ctx.arc(lx,ly,R,0,7);ctx.strokeStyle="#fff";ctx.lineWidth=3*u;ctx.stroke()}
+ $("camAngle").textContent=d==null?"--.-°":window.__camVal().toFixed(1)+"°";
+ $("camSub").textContent=d==null?(["Tap proximal landmark","Tap joint axis","Tap distal landmark"][pts.length]):"Included "+d.toFixed(1)+"° · 180−angle "+(180-d).toFixed(1)+"°";
+ var f="",sel=$("joint");if(d!=null&&window.__J){var j=window.__J[+sel.value];var m=window.__camVal();if(j[2]!=null)f=m<j[3]-5?"<span style='color:#ff9f0a'>Below normal (−"+(j[3]-m).toFixed(1)+"°)</span>":m>j[3]+5?"<span style='color:#64d2ff'>Above normal range</span>":"<span style='color:#0f8'>Within normal range</span>"}
+ $("flag2").innerHTML=f}
+$("joint").addEventListener("change",draw);
+function pos(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height}}
+cv.addEventListener("pointerdown",function(e){if(!img)return;e.preventDefault();cv.setPointerCapture(e.pointerId);var p=pos(e),r=cv.getBoundingClientRect(),th=30*cv.width/r.width,best=-1,bd=th;
+ pts.forEach(function(q,i){var dd=Math.hypot(q.x-p.x,q.y-p.y);if(dd<bd){bd=dd;best=i}});
+ if(best<0&&pts.length<3){pts.push(p);best=pts.length-1}drag=best;if(drag>=0){pts[drag]=p;loupe=p}draw()});
+cv.addEventListener("pointermove",function(e){if(drag<0)return;e.preventDefault();var p=pos(e);pts[drag]=p;loupe=p;draw()});
+function up(){drag=-1;loupe=null;draw()}cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
+$("camPng").onclick=function(){if(!img)return;loupe=null;draw();var sel=$("joint"),j=window.__J?window.__J[+sel.value]:["",""];
+ var a=document.createElement("a");a.download="goniometer_"+(j[0]+"_"+j[1]).replace(/\W+/g,"_")+"_"+new Date().toISOString().slice(0,19).replace(/:/g,"")+".png";
+ cv.toBlob(function(b){a.href=URL.createObjectURL(b);document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},1000)},"image/png")};
 })();
 </script>
 </body></html>

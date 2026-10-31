@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000">
+<title>Camera Goniometer</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#000;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:env(safe-area-inset-top) 10px calc(10px + env(safe-area-inset-bottom))}
+h1{font-size:15px;margin:8px 0;color:#9cf}
+.row{display:flex;gap:8px;margin:6px 0;align-items:center}
+select,input[type=text]{flex:1;font-size:16px;padding:10px;background:#111;color:#fff;border:2px solid #444;border-radius:10px;min-width:0}
+.seg{display:flex;flex:1;border:2px solid #444;border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;background:#111;color:#ccc;font-size:15px;padding:10px}
+.seg button.on{background:#ffd400;color:#000}
+button{font-size:17px;font-weight:700;padding:14px 8px;border-radius:14px;border:0;flex:1;background:#2a2a2a;color:#fff}
+button:active{filter:brightness(1.4)}
+#ref{font-size:14px;color:#ccc}#ref b{color:#ffd400}
+#big{text-align:center;font-size:min(18vw,80px);font-weight:800;color:#0f8;font-variant-numeric:tabular-nums;line-height:1.05}
+#big.held{color:#ff6b6b}
+#sub{text-align:center;font-size:14px;color:#aaa}#flag{text-align:center;font-size:14px;min-height:18px}
+#wrap{position:relative;border:3px solid #222;border-radius:14px;overflow:hidden;background:#111}
+#wrap.held{border-color:#ff3b30}
+#cv{width:100%;display:block;touch-action:none}
+video{display:none}
+input[type=range]{flex:1;accent-color:#ffd400}
+.legend{font-size:13px;color:#ccc;border-collapse:collapse;width:100%;margin-top:8px}
+.legend td{border-bottom:1px solid #222;padding:5px}.sw{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:4px}
+#log table{width:100%;border-collapse:collapse;font-size:14px}#log td{border-bottom:1px solid #222;padding:6px 3px}
+#log td.a{font-weight:700;color:#0f8}.del{background:#400;color:#f88;padding:6px 10px;font-size:14px;flex:none}
+.small{font-size:15px;padding:12px 6px}
+</style></head><body>
+<h1>Camera Universal Goniometer</h1>
+<div class="row"><select id="joint"></select></div>
+<div class="row"><div class="seg" id="side"><button data-v="Left">Left</button><button data-v="Right" class="on">Right</button></div>
+<div class="seg" id="conv"><button data-v="inc" class="on">Included</button><button data-v="sup">180 − angle</button></div></div>
+<div id="ref"></div>
+<div id="big">--.-°</div><div id="sub">Start camera or load a photo</div><div id="flag"></div>
+<div id="wrap"><canvas id="cv" width="720" height="960"></canvas></div>
+<video id="video" playsinline muted autoplay></video>
+<div class="row"><button id="live" style="background:#0a84ff">Live camera</button><button id="freeze" style="background:#ffd400;color:#000">Freeze</button><button id="hold" style="background:#ff3b30">Hold</button></div>
+<div class="row"><button class="small" id="fileBtn">Photo / Upload</button><input type="file" id="file" accept="image/*" capture="environment" hidden><button class="small" id="reset">Reset arms</button><button class="small" id="png">PNG</button></div>
+<div class="row"><span style="font-size:14px;color:#aaa">Protractor size</span><input type="range" id="size" min="15" max="60" value="32"></div>
+<div class="row"><input type="text" id="pt" placeholder="Patient initials (optional)" maxlength="8" autocapitalize="characters"><button id="save" style="background:#30d158;color:#000;flex:.6">Save</button></div>
+<div class="row"><button class="small" id="csv">Export CSV</button><button class="small" id="clear">Clear log</button></div>
+<table class="legend"><tr><td><b>Component</b></td><td><b>Function</b></td></tr>
+<tr><td><span class="sw" style="background:#ff3b30"></span>Fulcrum / Axis</td><td>Drag the red pivot over the joint axis</td></tr>
+<tr><td><span class="sw" style="background:#0a84ff"></span>Stationary arm</td><td>Drag its end to align with the proximal segment</td></tr>
+<tr><td><span class="sw" style="background:#ffd400"></span>Moving arm</td><td>Drag its end to align with the distal segment</td></tr>
+<tr><td><span class="sw" style="background:#fff"></span>Protractor scale</td><td>Reads the angle in degrees (0 on stationary arm)</td></tr></table>
+<div id="log"></div>
+<script>
+(function(){"use strict";
+var J=[["Shoulder","Flexion",0,180],["Shoulder","Extension",0,60],["Shoulder","Abduction",0,180],["Shoulder","Internal rotation",0,70],["Shoulder","External rotation",0,90],
+["Elbow","Flexion",0,150],["Forearm","Pronation",0,80],["Forearm","Supination",0,80],["Wrist","Flexion",0,80],["Wrist","Extension",0,70],["Wrist","Radial deviation",0,20],["Wrist","Ulnar deviation",0,30],
+["Hip","Flexion",0,120],["Hip","Extension",0,30],["Hip","Abduction",0,45],["Hip","Adduction",0,30],["Hip","Internal rotation",0,45],["Hip","External rotation",0,45],
+["Knee","Flexion",0,135],["Knee","Extension",0,0],["Ankle","Dorsiflexion",0,20],["Ankle","Plantarflexion",0,50],["Ankle","Inversion",0,35],["Ankle","Eversion",0,15],
+["Cervical","Flexion",0,45],["Cervical","Extension",0,45],["Cervical","Lateral flexion",0,45],["Lumbar","Flexion",0,60],["Lumbar","Extension",0,25],["Lumbar","Lateral flexion",0,25],["Other","Free measurement",null,null]];
+var $=function(i){return document.getElementById(i)},sel=$("joint");
+J.forEach(function(j,i){var o=document.createElement("option");o.value=i;o.textContent=j[0]+" – "+j[1];sel.appendChild(o)});
+var cv=$("cv"),ctx=cv.getContext("2d"),video=$("video"),stream=null,src=null,frozen=null;
+var S={side:"Right",conv:"inc",held:false,heldVal:null,f:{x:360,y:480},ts:Math.PI,tm:-Math.PI/4,drag:null,lp:null};
+function seg(id,k){var el=$(id);[].forEach.call(el.children,function(b){b.onclick=function(){S[k]=b.dataset.v;[].forEach.call(el.children,function(x){x.classList.toggle("on",x===b)});draw()}})}
+seg("side","side");seg("conv","conv");
+sel.onchange=function(){var j=J[+sel.value];$("ref").innerHTML=j[2]==null?"Free measurement":"AAOS normal: <b>"+j[2]+"° – "+j[3]+"°</b>";draw()};sel.onchange();
+function R(){return Math.min(cv.width,cv.height)*$("size").value/100}
+function L(){return Math.max(cv.width,cv.height)*0.45}
+function inc(){var d=Math.abs(S.tm-S.ts)*180/Math.PI%360;return d>180?360-d:d}
+function val(){if(S.held)return S.heldVal;return S.conv==="inc"?inc():180-inc()}
+window.__g={S:S,inc:inc,val:val,set:function(o){Object.assign(S,o);draw()}};
+function u(){return Math.max(cv.width,cv.height)/960}
+function arm(th,col,label){var f=S.f,l=L(),k=u(),w=26*k;ctx.save();ctx.translate(f.x,f.y);ctx.rotate(th);
+ ctx.globalAlpha=.55;ctx.fillStyle=col;ctx.fillRect(0,-w/2,l,w);ctx.globalAlpha=1;ctx.strokeStyle=col;ctx.lineWidth=2*k;ctx.strokeRect(0,-w/2,l,w);
+ ctx.strokeStyle="#000";ctx.lineWidth=1.2*k;for(var x=R()+4*k;x<l;x+=10*k){var t=(Math.round(x/(10*k))%5===0)?w/2:w/4;ctx.beginPath();ctx.moveTo(x,-w/2);ctx.lineTo(x,-w/2+t);ctx.stroke()}
+ ctx.strokeStyle="#fff";ctx.lineWidth=2*k;ctx.setLineDash([8*k,6*k]);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(l,0);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle="#000";ctx.font="bold "+(13*k)+"px system-ui";ctx.fillText(label,R()+14*k,5*k);
+ ctx.beginPath();ctx.arc(l,0,16*k,0,7);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=3*k;ctx.stroke();ctx.restore()}
+function protractor(){var f=S.f,r=R(),k=u();ctx.save();ctx.translate(f.x,f.y);ctx.rotate(S.ts);
+ ctx.beginPath();ctx.arc(0,0,r,0,7);ctx.fillStyle="rgba(255,255,255,.18)";ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=2*k;ctx.stroke();
+ for(var d=0;d<360;d++){var a=d*Math.PI/180,len=d%10===0?r*.16:d%5===0?r*.1:r*.05;if(r<120*k&&d%5)continue;
+  ctx.beginPath();ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);ctx.lineTo(Math.cos(a)*(r-len),Math.sin(a)*(r-len));ctx.lineWidth=(d%10?1:2)*k;ctx.stroke();
+  if(d%(r<140*k?30:10)===0){var n=d>180?360-d:d,rr=r-len-11*k;ctx.save();ctx.translate(Math.cos(a)*rr,Math.sin(a)*rr);ctx.rotate(a+Math.PI/2);ctx.fillStyle="#fff";ctx.font="bold "+(Math.max(9,r*.07))+"px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(n,0,0);ctx.restore()}}
+ ctx.restore()}
+function draw(){var k=u();ctx.fillStyle="#111";ctx.fillRect(0,0,cv.width,cv.height);
+ var s=frozen||(stream&&video.videoWidth?video:null);if(s)ctx.drawImage(s,0,0,cv.width,cv.height);
+ protractor();arm(S.ts,"#0a84ff","STATIONARY");arm(S.tm,"#ffd400","MOVING");
+ // pointer on moving arm + arc
+ var f=S.f,r=R(),d=S.tm-S.ts;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
+ ctx.beginPath();ctx.arc(f.x,f.y,r*.45,S.ts,S.ts+d,d<0);ctx.strokeStyle="#0f8";ctx.lineWidth=5*k;ctx.stroke();
+ var px=f.x+Math.cos(S.tm)*r,py=f.y+Math.sin(S.tm)*r;ctx.save();ctx.translate(px,py);ctx.rotate(S.tm);ctx.beginPath();ctx.moveTo(-r*.2,0);ctx.lineTo(4*k,-10*k);ctx.lineTo(4*k,10*k);ctx.closePath();ctx.fillStyle="#ff3b30";ctx.fill();ctx.restore();
+ ctx.beginPath();ctx.arc(f.x,f.y,14*k,0,7);ctx.fillStyle="#ff3b30";ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=3*k;ctx.stroke();
+ var v=val(),t=v.toFixed(1)+"°";ctx.font="bold "+(30*k)+"px system-ui";ctx.lineWidth=6*k;ctx.strokeStyle="#000";ctx.strokeText(t,14*k,40*k);ctx.fillStyle="#0f8";ctx.fillText(t,14*k,40*k);
+ if(S.lp){var lr=80*k,z=3,lx=S.lp.x<cv.width/2?cv.width-lr-12*k:lr+12*k,ly=cv.height-lr-12*k,c=document.createElement("canvas");
+  ctx.save();ctx.beginPath();ctx.arc(lx,ly,lr,0,7);ctx.clip();ctx.drawImage(cv,S.lp.x-lr/z,S.lp.y-lr/z,2*lr/z,2*lr/z,lx-lr,ly-lr,2*lr,2*lr);
+  ctx.strokeStyle="#ff3b30";ctx.lineWidth=1.5*k;ctx.beginPath();ctx.moveTo(lx-lr,ly);ctx.lineTo(lx+lr,ly);ctx.moveTo(lx,ly-lr);ctx.lineTo(lx,ly+lr);ctx.stroke();ctx.restore();
+  ctx.beginPath();ctx.arc(lx,ly,lr,0,7);ctx.strokeStyle="#fff";ctx.lineWidth=3*k;ctx.stroke()}
+ $("big").textContent=t;$("big").classList.toggle("held",S.held);$("wrap").classList.toggle("held",S.held);$("hold").textContent=S.held?"Release":"Hold";
+ $("sub").textContent="Included "+inc().toFixed(1)+"° · 180−angle "+(180-inc()).toFixed(1)+"°"+(S.held?" · HELD":"");
+ var j=J[+sel.value],fl="";if(j[2]!=null)fl=v<j[3]-5?"<span style='color:#ff9f0a'>Below normal (−"+(j[3]-v).toFixed(1)+"°)</span>":v>j[3]+5?"<span style='color:#64d2ff'>Above normal range</span>":"<span style='color:#0f8'>Within normal range</span>";$("flag").innerHTML=fl}
+function loop(){if(stream&&!frozen)draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+function fit(w,h){var m=1280/Math.max(w,h);m=Math.min(m,1);var ow=cv.width,oh=cv.height;cv.width=Math.round(w*m);cv.height=Math.round(h*m);
+ S.f={x:S.f.x*cv.width/ow,y:S.f.y*cv.height/oh}}
+$("live").onclick=function(){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$("sub").textContent="Live camera unavailable – use Photo / Upload";return}
+ navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280}},audio:false}).then(function(s){if(stream)stream.getTracks().forEach(function(t){t.stop()});stream=s;frozen=null;video.srcObject=s;video.play();
+  video.onloadedmetadata=function(){fit(video.videoWidth,video.videoHeight);draw()};$("freeze").textContent="Freeze"}).catch(function(e){$("sub").textContent="Camera error: "+e.name+" – use Photo / Upload"})};
+$("freeze").onclick=function(){if(frozen&&stream){frozen=null;$("freeze").textContent="Freeze";return}if(!stream||!video.videoWidth)return;
+ var c=document.createElement("canvas");c.width=cv.width;c.height=cv.height;c.getContext("2d").drawImage(video,0,0,c.width,c.height);frozen=c;$("freeze").textContent="Unfreeze";draw()};
+function setImg(im){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}fit(im.naturalWidth,im.naturalHeight);var c=document.createElement("canvas");c.width=cv.width;c.height=cv.height;c.getContext("2d").drawImage(im,0,0,c.width,c.height);frozen=c;$("freeze").textContent="Freeze";draw()}
+window.__g.setImg=setImg;
+$("fileBtn").onclick=function(){$("file").click()};
+$("file").onchange=function(e){var f=e.target.files[0];if(!f)return;var im=new Image();im.onload=function(){setImg(im)};im.src=URL.createObjectURL(f);e.target.value=""};
+$("hold").onclick=function(){if(S.held)S.held=false;else{S.heldVal=val();S.held=true}draw()};
+$("reset").onclick=function(){S.f={x:cv.width/2,y:cv.height/2};S.ts=Math.PI;S.tm=-Math.PI/4;S.held=false;draw()};
+$("size").oninput=draw;
+function pos(e){var r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height}}
+function distSeg(p,th){var dx=Math.cos(th),dy=Math.sin(th),vx=p.x-S.f.x,vy=p.y-S.f.y,t=vx*dx+vy*dy;if(t<0||t>L()+20*u())return 1e9;return Math.abs(vx*dy-vy*dx)}
+cv.addEventListener("pointerdown",function(e){if(S.held)return;e.preventDefault();cv.setPointerCapture(e.pointerId);var p=pos(e),k=u(),l=L();
+ var em={x:S.f.x+Math.cos(S.tm)*l,y:S.f.y+Math.sin(S.tm)*l},es={x:S.f.x+Math.cos(S.ts)*l,y:S.f.y+Math.sin(S.ts)*l},h=function(a){return Math.hypot(a.x-p.x,a.y-p.y)};
+ if(h(S.f)<40*k)S.drag="f";else if(h(em)<50*k)S.drag="m";else if(h(es)<50*k)S.drag="s";else if(distSeg(p,S.tm)<30*k)S.drag="m";else if(distSeg(p,S.ts)<30*k)S.drag="s";else S.drag=null;
+ if(S.drag){move(p)}});
+function move(p){if(S.drag==="f")S.f=p;else{var a=Math.atan2(p.y-S.f.y,p.x-S.f.x);if(S.drag==="m")S.tm=a;else S.ts=a}S.lp=p;draw()}
+cv.addEventListener("pointermove",function(e){if(!S.drag)return;e.preventDefault();move(pos(e))});
+function up(){S.drag=null;S.lp=null;draw()}cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
+// log
+var KEY="camgonio_log";function load(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}function store(l){localStorage.setItem(KEY,JSON.stringify(l))}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return"&#"+c.charCodeAt(0)+";"})}
+function drawLog(){var l=load();if(!l.length){$("log").innerHTML="<p style='color:#666'>No saved readings.</p>";return}var h="<table>";
+ l.slice().reverse().forEach(function(r){var d=new Date(r.t);h+="<tr><td>"+esc(d.toLocaleString([], {dateStyle:"short",timeStyle:"short"}))+"<br><small>"+esc(r.pt||"—")+" · "+esc(r.side)+" "+esc(r.joint)+" "+esc(r.mov)+" · "+(r.conv==="inc"?"included":"180−")+"</small></td><td class='a'>"+r.angle.toFixed(1)+"°</td><td><button class='del' data-id='"+r.id+"'>✕</button></td></tr>"});
+ $("log").innerHTML=h+"</table>";[].forEach.call(document.querySelectorAll(".del"),function(b){b.onclick=function(){if(confirm("Delete this reading?")){store(load().filter(function(r){return String(r.id)!==b.dataset.id}));drawLog()}}})}
+$("save").onclick=function(){var j=J[+sel.value],l=load(),v=val();l.push({id:Date.now(),t:new Date().toISOString(),pt:$("pt").value.trim().toUpperCase(),side:S.side,joint:j[0],mov:j[1],angle:Math.round(v*10)/10,included:Math.round(inc()*10)/10,conv:S.conv,method:"camera-goniometer",normal:j[2]==null?"":j[2]+"-"+j[3]});store(l);drawLog();try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}};
+$("clear").onclick=function(){if(confirm("Delete ALL saved readings?")){store([]);drawLog()}};
+function dl(blob,name){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},1000)}
+$("csv").onclick=function(){var l=load();if(!l.length){alert("Log is empty.");return}var q=function(s){return'"'+String(s).replace(/"/g,'""')+'"'};
+ var rows=[["Timestamp","Patient","Side","Joint","Movement","Angle_deg","Included_deg","Convention","Method","AAOS_normal_deg"]].concat(l.map(function(r){return[r.t,r.pt,r.side,r.joint,r.mov,r.angle,r.included,r.conv==="inc"?"included":"180-minus",r.method,r.normal]}));
+ dl(new Blob(["\ufeff"+rows.map(function(r){return r.map(q).join(",")}).join("\r\n")],{type:"text/csv"}),"camera_goniometer_"+new Date().toISOString().slice(0,10)+".csv")};
+$("png").onclick=function(){S.lp=null;draw();var j=J[+sel.value],k=u();ctx.font="bold "+(16*k)+"px system-ui";var t=S.side+" "+j[0]+" "+j[1]+" · "+new Date().toLocaleString()+($("pt").value?" · "+$("pt").value.toUpperCase():"");
+ ctx.lineWidth=5*k;ctx.strokeStyle="#000";ctx.strokeText(t,14*k,cv.height-14*k);ctx.fillStyle="#fff";ctx.fillText(t,14*k,cv.height-14*k);
+ cv.toBlob(function(b){dl(b,"goniometer_"+(S.side+"_"+j[0]+"_"+j[1]).replace(/\W+/g,"_")+"_"+Date.now()+".png");draw()},"image/png")};
+drawLog();draw();
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(function(){});
+})();
+</script></body></html>

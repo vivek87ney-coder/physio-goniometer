@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Physio Goniometer</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#000;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;min-height:100vh;padding:env(safe-area-inset-top) 10px calc(10px + env(safe-area-inset-bottom))}
+h1{font-size:15px;margin:8px 0;color:#9cf;font-weight:600}
+.row{display:flex;gap:8px;margin:6px 0}
+select,input{flex:1;font-size:16px;padding:10px;background:#111;color:#fff;border:2px solid #444;border-radius:10px;min-width:0}
+.seg{display:flex;flex:1;border:2px solid #444;border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;margin:0;background:#111;color:#ccc;font-size:15px;padding:10px}
+.seg button.on{background:#ffd400;color:#000;font-weight:700}
+#ref{font-size:14px;color:#ccc;min-height:20px;margin:4px 0}
+#ref b{color:#ffd400}
+#readout{text-align:center;margin:8px 0;padding:10px;border-radius:16px;background:#0a0a0a;border:3px solid #222}
+#readout.held{border-color:#ff4d4d}
+#angle{font-size:min(28vw,140px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1;color:#0f8}
+#readout.held #angle{color:#ff6b6b}
+#status{font-size:13px;color:#888;margin-top:6px}
+#flag{font-size:14px;margin-top:4px;min-height:18px}
+button{font-size:18px;font-weight:700;padding:16px 8px;border-radius:14px;border:0;flex:1;background:#2a2a2a;color:#fff}
+button:active{filter:brightness(1.4)}
+#start{background:#0a84ff}#zero{background:#ffd400;color:#000}#hold{background:#ff3b30}#save{background:#30d158;color:#000}
+#log{margin-top:10px;font-size:14px}
+#log table{width:100%;border-collapse:collapse}
+#log td{border-bottom:1px solid #222;padding:6px 3px;vertical-align:middle}
+#log td.a{font-weight:700;color:#0f8;white-space:nowrap}
+.del{background:#400;color:#f88;padding:6px 10px;font-size:14px;flex:none}
+.small{font-size:15px;padding:12px 6px}
+.spacer{flex:1}
+</style></head><body>
+<h1>Physio Goniometer / Inclinometer</h1>
+<div class="row"><select id="joint" aria-label="Joint and movement"></select></div>
+<div class="row">
+ <div class="seg" id="side"><button data-v="L">Left</button><button data-v="R" class="on">Right</button></div>
+ <div class="seg" id="axis"><button data-v="portrait" class="on">Portrait</button><button data-v="landscape">Landscape</button></div>
+</div>
+<div id="ref"></div>
+<div id="readout"><div id="angle">--.-°</div><div id="status">Tap Start to enable sensors</div><div id="flag"></div></div>
+<div class="spacer"></div>
+<div class="row"><button id="start">Start</button></div>
+<div class="row"><button id="zero">Zero</button><button id="hold">Hold</button></div>
+<div class="row"><input id="pt" placeholder="Patient initials (optional)" maxlength="8" autocapitalize="characters"><button id="save" style="flex:.6">Save</button></div>
+<div class="row"><button class="small" id="csv">Export CSV</button><button class="small" id="clear">Clear log</button></div>
+<div id="log"></div>
+<script>
+(function(){
+"use strict";
+// AAOS normal reference ranges (degrees)
+var J=[
+["Shoulder","Flexion",0,180],["Shoulder","Extension",0,60],["Shoulder","Abduction",0,180],
+["Shoulder","Internal rotation",0,70],["Shoulder","External rotation",0,90],
+["Elbow","Flexion",0,150],["Forearm","Pronation",0,80],["Forearm","Supination",0,80],
+["Wrist","Flexion",0,80],["Wrist","Extension",0,70],["Wrist","Radial deviation",0,20],["Wrist","Ulnar deviation",0,30],
+["Hip","Flexion",0,120],["Hip","Extension",0,30],["Hip","Abduction",0,45],["Hip","Adduction",0,30],
+["Hip","Internal rotation",0,45],["Hip","External rotation",0,45],
+["Knee","Flexion",0,135],["Knee","Extension",0,0],
+["Ankle","Dorsiflexion",0,20],["Ankle","Plantarflexion",0,50],["Ankle","Inversion",0,35],["Ankle","Eversion",0,15],
+["Cervical","Flexion",0,45],["Cervical","Extension",0,45],["Cervical","Lateral flexion",0,45],
+["Lumbar","Flexion",0,60],["Lumbar","Extension",0,25],["Lumbar","Lateral flexion",0,25],
+["Other","Free measurement",null,null]];
+var $=function(id){return document.getElementById(id)};
+var sel=$("joint");
+J.forEach(function(j,i){var o=document.createElement("option");o.value=i;o.textContent=j[0]+" – "+j[1];sel.appendChild(o)});
+var st={side:"R",axis:"portrait",raw:null,filt:null,zero:0,held:false,heldVal:null,running:false,last:0};
+var ALPHA=0.15;
+try{var p=JSON.parse(localStorage.getItem("gonio_prefs")||"{}");if(p.j!=null)sel.value=p.j;if(p.side)st.side=p.side;if(p.axis)st.axis=p.axis}catch(e){}
+function prefs(){try{localStorage.setItem("gonio_prefs",JSON.stringify({j:sel.value,side:st.side,axis:st.axis}))}catch(e){}}
+function seg(id,key){var el=$(id);[].forEach.call(el.children,function(b){b.classList.toggle("on",b.dataset.v===st[key]);
+ b.onclick=function(){st[key]=b.dataset.v;[].forEach.call(el.children,function(x){x.classList.toggle("on",x===b)});
+ if(key==="axis"){st.filt=null;st.zero=0;}prefs();render()}})}
+seg("side","side");seg("axis","axis");
+function cur(){return J[+sel.value]}
+function showRef(){var j=cur();$("ref").innerHTML=j[2]==null?"Free measurement – no reference range":"AAOS normal: <b>"+j[2]+"° – "+j[3]+"°</b> ("+j[0]+" "+j[1].toLowerCase()+")"}
+sel.onchange=function(){prefs();showRef();render()};showRef();
+// Tilt angle in the plane relevant to how phone lies on limb.
+// portrait: rotation about phone's X axis (beta); landscape: about Y axis (gamma) - computed from gravity vector for full 0-360 range.
+function tilt(b,g){
+ var br=b*Math.PI/180,gr=g*Math.PI/180;
+ // gravity in device frame (ZXY intrinsic, alpha irrelevant)
+ var gx=-Math.cos(br)*Math.sin(gr), gy=Math.sin(br), gz=Math.cos(br)*Math.cos(gr);
+ var a= st.axis==="portrait" ? Math.atan2(gy,gz) : Math.atan2(-gx,gz);
+ return a*180/Math.PI;
+}
+function wrap(a){while(a>180)a-=360;while(a<=-180)a+=360;return a}
+function onOri(e){
+ if(e.beta==null||e.gamma==null)return;
+ var a=tilt(e.beta,e.gamma);st.raw=a;st.last=Date.now();
+ if(st.filt==null)st.filt=a;else st.filt=wrap(st.filt+ALPHA*wrap(a-st.filt));
+ if(!st.held)render();
+}
+function val(){if(st.held)return st.heldVal;if(st.filt==null)return null;return wrap(st.filt-st.zero)}
+function render(){
+ var v=val();
+ $("angle").textContent=v==null?"--.-°":Math.abs(v).toFixed(1)+"°";
+ $("readout").classList.toggle("held",st.held);
+ $("hold").textContent=st.held?"Release":"Hold";
+ var f="";var j=cur();
+ if(v!=null&&j[2]!=null){var m=Math.abs(v);f=m<j[3]-5?"<span style='color:#ff9f0a'>Below normal (−"+(j[3]-m).toFixed(1)+"°)</span>":m>j[3]+5?"<span style='color:#64d2ff'>Above normal range</span>":"<span style='color:#0f8'>Within normal range</span>"}
+ $("flag").innerHTML=f;
+ if(st.running)$("status").textContent=(st.held?"HELD":"Live")+" · "+st.axis+" · "+(st.side==="L"?"Left":"Right")+(v!=null&&v<0?" · (−) direction":"");
+}
+$("start").onclick=function(){
+ function go(){window.addEventListener("deviceorientation",onOri,true);st.running=true;$("start").textContent="Sensors on";$("start").style.background="#1c3d6b";
+  $("status").textContent="Waiting for sensor data…";
+  setTimeout(function(){if(!st.last)$("status").textContent="No sensor data. Needs a phone with motion sensors and HTTPS."},2500)}
+ if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function"){
+  DeviceOrientationEvent.requestPermission().then(function(r){if(r==="granted")go();else $("status").textContent="Motion permission denied. Enable in Settings › Safari › Motion & Orientation."}).catch(function(err){$("status").textContent="Permission error: "+err})
+ }else if(typeof DeviceOrientationEvent==="undefined"){$("status").textContent="DeviceOrientation not supported on this device."}else go();
+};
+$("zero").onclick=function(){if(st.filt==null)return;st.held=false;st.zero=st.filt;render();buzz()};
+$("hold").onclick=function(){if(!st.held){var v=val();if(v==null)return;st.heldVal=v;st.held=true}else st.held=false;render();buzz()};
+function buzz(){try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}}
+// Log
+function load(){try{return JSON.parse(localStorage.getItem("gonio_log")||"[]")}catch(e){return[]}}
+function store(l){localStorage.setItem("gonio_log",JSON.stringify(l))}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function drawLog(){var l=load();if(!l.length){$("log").innerHTML="<p style='color:#666'>No saved readings.</p>";return}
+ var h="<table>";l.slice().reverse().forEach(function(r){var d=new Date(r.t);
+  h+="<tr><td>"+esc(d.toLocaleDateString())+" "+esc(d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}))+"<br><small>"+esc(r.pt||"—")+" · "+esc(r.side)+" "+esc(r.joint)+" "+esc(r.mov)+"</small></td><td class='a'>"+r.angle.toFixed(1)+"°</td><td><button class='del' data-id='"+r.id+"'>✕</button></td></tr>"});
+ $("log").innerHTML=h+"</table>";
+ [].forEach.call(document.querySelectorAll(".del"),function(b){b.onclick=function(){if(!confirm("Delete this reading?"))return;store(load().filter(function(r){return String(r.id)!==b.dataset.id}));drawLog()}})}
+$("save").onclick=function(){var v=val();if(v==null){alert("No reading yet. Tap Start.");return}var j=cur();
+ var l=load();l.push({id:Date.now(),t:new Date().toISOString(),pt:$("pt").value.trim().toUpperCase(),side:st.side==="L"?"Left":"Right",joint:j[0],mov:j[1],angle:Math.round(Math.abs(v)*10)/10,signed:Math.round(v*10)/10,axis:st.axis,normal:j[2]==null?"":j[2]+"-"+j[3]});
+ store(l);drawLog();buzz()};
+$("clear").onclick=function(){if(confirm("Delete ALL saved readings?")){store([]);drawLog()}};
+$("csv").onclick=function(){var l=load();if(!l.length){alert("Log is empty.");return}
+ var q=function(s){return'"'+String(s).replace(/"/g,'""')+'"'};
+ var rows=[["Timestamp","Patient","Side","Joint","Movement","Angle_deg","Signed_deg","Axis","AAOS_normal_deg"]].concat(l.map(function(r){return[r.t,r.pt,r.side,r.joint,r.mov,r.angle,r.signed,r.axis,r.normal]}));
+ var csv=rows.map(function(r){return r.map(q).join(",")}).join("\r\n");
+ var blob=new Blob(["\ufeff"+csv],{type:"text/csv"});var name="goniometer_"+new Date().toISOString().slice(0,10)+".csv";
+ try{var file=new File([blob],name,{type:"text/csv"});if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:name}).catch(function(){});return}}catch(e){}
+ var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000)};
+drawLog();render();
+// Offline: cache via service worker when served from a file named sw.js is not available in single-file mode; use Cache API from page instead.
+if("caches" in window&&location.protocol==="https:"){caches.open("gonio-v1").then(function(c){c.add(location.href).catch(function(){})})}
+if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(function(){})}
+window.__gonio={st:st,val:val};
+})();
+</script>
+</body></html>

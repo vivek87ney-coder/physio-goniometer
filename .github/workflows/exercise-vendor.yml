@@ -1,0 +1,31 @@
+name: Exercise vendor assets
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/exercise-vendor.yml']
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy MediaPipe from posture, fetch jsPDF 2.5.2 + SheetJS 0.18.5
+        run: |
+          set -e
+          mkdir -p exercise/vendor/wasm
+          cp posture/vendor/vision_bundle.mjs posture/vendor/pose_landmarker_lite.task exercise/vendor/
+          cp posture/vendor/wasm/* exercise/vendor/wasm/
+          npm pack jspdf@2.5.2 xlsx@0.18.5
+          mkdir jp xl && tar xzf jspdf-2.5.2.tgz -C jp && tar xzf xlsx-0.18.5.tgz -C xl
+          cp jp/package/dist/jspdf.umd.min.js xl/package/dist/xlsx.full.min.js exercise/vendor/
+          rm -rf jp xl *.tgz
+          ls -la exercise/vendor exercise/vendor/wasm
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add exercise
+          git diff --cached --quiet || git commit -m "Add exercise vendor assets (MediaPipe, jsPDF, SheetJS)"
+          git pull --rebase
+          git push

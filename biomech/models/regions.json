@@ -1,0 +1,328 @@
+{
+ "license": "Z-Anatomy (Lluís Vinent / Gauthier Kervyn), CC BY-SA 4.0, derived from BodyParts3D (c) The Database Center for Life Science, CC BY-SA 2.1 JP. Converted, region-split and simplified for Physio 3D Biomechanics.",
+ "regions": {
+  "shoulder": {
+   "group": "Upper limb",
+   "name": "Shoulder / girdle",
+   "box": [
+    -0.32,
+    0,
+    1.2,
+    1.5,
+    -0.16,
+    0.12
+   ],
+   "both": false,
+   "joint": "gh",
+   "bytes": 3365812,
+   "tris": 420000,
+   "count": 447
+  },
+  "arm": {
+   "group": "Upper limb",
+   "name": "Arm",
+   "box": [
+    -0.34,
+    -0.1,
+    1.06,
+    1.42,
+    -0.13,
+    0.08
+   ],
+   "both": false,
+   "joint": "gh",
+   "bytes": 2582288,
+   "tris": 300000,
+   "count": 270
+  },
+  "elbow": {
+   "group": "Upper limb",
+   "name": "Elbow",
+   "box": [
+    -0.34,
+    -0.14,
+    0.98,
+    1.18,
+    -0.12,
+    0.08
+   ],
+   "both": false,
+   "joint": "elbow",
+   "bytes": 1775456,
+   "tris": 240000,
+   "count": 120
+  },
+  "forearm": {
+   "group": "Upper limb",
+   "name": "Forearm",
+   "box": [
+    -0.34,
+    -0.16,
+    0.82,
+    1.13,
+    -0.1,
+    0.08
+   ],
+   "both": false,
+   "joint": "rul",
+   "bytes": 1707212,
+   "tris": 290898,
+   "count": 196
+  },
+  "wrist": {
+   "group": "Upper limb",
+   "name": "Wrist",
+   "box": [
+    -0.33,
+    -0.17,
+    0.77,
+    0.9,
+    -0.08,
+    0.07
+   ],
+   "both": false,
+   "joint": "rc",
+   "bytes": 1339964,
+   "tris": 220000,
+   "count": 168
+  },
+  "hand": {
+   "group": "Upper limb",
+   "name": "Hand / fingers",
+   "box": [
+    -0.36,
+    -0.15,
+    0.56,
+    0.86,
+    -0.09,
+    0.09
+   ],
+   "both": false,
+   "joint": "rc",
+   "bytes": 1685688,
+   "tris": 300000,
+   "count": 184
+  },
+  "hip": {
+   "group": "Lower limb",
+   "name": "Hip",
+   "box": [
+    -0.22,
+    0,
+    0.72,
+    1.06,
+    -0.15,
+    0.12
+   ],
+   "both": false,
+   "joint": "hip",
+   "bytes": 2917500,
+   "tris": 400000,
+   "count": 297
+  },
+  "thigh": {
+   "group": "Lower limb",
+   "name": "Thigh",
+   "box": [
+    -0.22,
+    0,
+    0.4,
+    0.95,
+    -0.13,
+    0.11
+   ],
+   "both": false,
+   "joint": "hip",
+   "bytes": 2777784,
+   "tris": 360000,
+   "count": 296
+  },
+  "knee": {
+   "group": "Lower limb",
+   "name": "Knee",
+   "box": [
+    -0.2,
+    0,
+    0.33,
+    0.56,
+    -0.13,
+    0.1
+   ],
+   "both": false,
+   "joint": "tf",
+   "bytes": 1329156,
+   "tris": 260000,
+   "count": 118
+  },
+  "leg": {
+   "group": "Lower limb",
+   "name": "Leg",
+   "box": [
+    -0.2,
+    0,
+    0.03,
+    0.5,
+    -0.14,
+    0.08
+   ],
+   "both": false,
+   "joint": "tc",
+   "bytes": 1833764,
+   "tris": 300000,
+   "count": 250
+  },
+  "ankle": {
+   "group": "Lower limb",
+   "name": "Ankle",
+   "box": [
+    -0.17,
+    0,
+    -0.02,
+    0.15,
+    -0.14,
+    0.08
+   ],
+   "both": false,
+   "joint": "tc",
+   "bytes": 1451356,
+   "tris": 220000,
+   "count": 232
+  },
+  "foot": {
+   "group": "Lower limb",
+   "name": "Foot / toes",
+   "box": [
+    -0.18,
+    0,
+    -0.03,
+    0.1,
+    -0.15,
+    0.2
+   ],
+   "both": false,
+   "joint": "tc",
+   "bytes": 1756568,
+   "tris": 298457,
+   "count": 232
+  },
+  "cervical": {
+   "group": "Spine & trunk",
+   "name": "Cervical spine",
+   "box": [
+    -0.1,
+    0.1,
+    1.36,
+    1.57,
+    -0.14,
+    0.06
+   ],
+   "both": true,
+   "joint": "spine",
+   "bytes": 5274940,
+   "tris": 360000,
+   "count": 850
+  },
+  "thoracic": {
+   "group": "Spine & trunk",
+   "name": "Thoracic spine",
+   "box": [
+    -0.12,
+    0.12,
+    1.06,
+    1.42,
+    -0.18,
+    0
+   ],
+   "both": true,
+   "joint": "spine",
+   "bytes": 5756868,
+   "tris": 420000,
+   "count": 721
+  },
+  "lumbar": {
+   "group": "Spine & trunk",
+   "name": "Lumbar spine",
+   "box": [
+    -0.13,
+    0.13,
+    0.9,
+    1.12,
+    -0.17,
+    0.02
+   ],
+   "both": true,
+   "joint": "spine",
+   "bytes": 4081316,
+   "tris": 360000,
+   "count": 407
+  },
+  "si": {
+   "group": "Spine & trunk",
+   "name": "SI joint",
+   "box": [
+    -0.13,
+    0.13,
+    0.83,
+    1.02,
+    -0.16,
+    0.03
+   ],
+   "both": true,
+   "joint": "spine",
+   "bytes": 3920376,
+   "tris": 300000,
+   "count": 423
+  },
+  "pelvis": {
+   "group": "Spine & trunk",
+   "name": "Pelvis",
+   "box": [
+    -0.2,
+    0.2,
+    0.76,
+    1.08,
+    -0.17,
+    0.13
+   ],
+   "both": true,
+   "joint": "hip",
+   "bytes": 5229996,
+   "tris": 420000,
+   "count": 638
+  },
+  "cage": {
+   "group": "Spine & trunk",
+   "name": "Thoracic cage",
+   "box": [
+    -0.2,
+    0.2,
+    1.05,
+    1.45,
+    -0.18,
+    0.16
+   ],
+   "both": true,
+   "joint": "spine",
+   "bytes": 6951884,
+   "tris": 420000,
+   "count": 1009
+  },
+  "abdomen": {
+   "group": "Spine & trunk",
+   "name": "Abdomen",
+   "box": [
+    -0.2,
+    0.2,
+    0.84,
+    1.16,
+    -0.18,
+    0.17
+   ],
+   "both": true,
+   "joint": "spine",
+   "bytes": 5505496,
+   "tris": 380000,
+   "count": 681
+  }
+ }
+}

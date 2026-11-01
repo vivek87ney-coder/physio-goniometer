@@ -1,0 +1,32 @@
+name: Biomech vendor assets
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/biomech-vendor.yml']
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: MediaPipe (posture copy + full model), three.js 0.160.0, jsPDF 2.5.2, SheetJS 0.18.5
+        run: |
+          set -e
+          mkdir -p biomech/vendor/wasm
+          cp posture/vendor/vision_bundle.mjs posture/vendor/pose_landmarker_lite.task biomech/vendor/
+          cp posture/vendor/wasm/* biomech/vendor/wasm/
+          curl -fsSL -o biomech/vendor/pose_landmarker_full.task https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task
+          npm pack jspdf@2.5.2 xlsx@0.18.5 three@0.160.0
+          mkdir jp xl th && tar xzf jspdf-2.5.2.tgz -C jp && tar xzf xlsx-0.18.5.tgz -C xl && tar xzf three-0.160.0.tgz -C th
+          cp jp/package/dist/jspdf.umd.min.js xl/package/dist/xlsx.full.min.js th/package/build/three.module.min.js th/package/examples/jsm/controls/OrbitControls.js biomech/vendor/
+          rm -rf jp xl th *.tgz
+          ls -la biomech/vendor biomech/vendor/wasm
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add biomech
+          git diff --cached --quiet || git commit -m "Add biomech vendor assets (MediaPipe, three.js, jsPDF, SheetJS)"
+          git pull --rebase
+          git push

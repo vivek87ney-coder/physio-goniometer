@@ -1,0 +1,38 @@
+name: Biomech anatomy models (Z-Anatomy, CC BY-SA 4.0)
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/biomech-anatomy.yml', 'tools/build-anatomy.mjs']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Download Z-Anatomy FBX + FBX2glTF, convert
+        run: |
+          set -e
+          mkdir -p za/glb && cd za
+          B=https://raw.githubusercontent.com/LluisV/Z-Anatomy/PC-Version/Resources/Models/FBX
+          for n in Joints100 MuscularSystem100 SkeletalSystem100 NervousSystem100 CardioVascular41; do curl -fsSL -o "$n.fbx" "$B/$n.fbx"; done
+          curl -fsSL -o "Regions.fbx" "$B/Regions%20of%20human%20body100.fbx"
+          curl -fsSL -o FBX2glTF https://github.com/facebookincubator/FBX2glTF/releases/download/v0.9.7/FBX2glTF-linux-x64 && chmod +x FBX2glTF
+          for f in *.fbx; do ./FBX2glTF -b --pbr-metallic-roughness -i "$f" -o "glb/${f%.fbx}"; done
+          ls -la glb
+      - name: Region split + simplify + meshopt compress
+        run: |
+          set -e
+          cd za && npm init -y >/dev/null && npm i @gltf-transform/core@4 @gltf-transform/functions@4 @gltf-transform/extensions@4 meshoptimizer
+          cp ../tools/build-anatomy.mjs . && node build-anatomy.mjs glb out
+          mkdir -p ../biomech/models && cp out/* ../biomech/models/ && ls -la ../biomech/models
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add biomech/models
+          git diff --cached --quiet || git commit -m "Build biomech region anatomy models from Z-Anatomy (CC BY-SA 4.0)"
+          git pull --rebase
+          git push

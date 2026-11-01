@@ -24,20 +24,20 @@ export const METRICS={
  heel:{label:"Heel raise (heel-toe line vs floor)",idx:["heel","t"],f:(P,S)=>Math.atan2(P[S.t].y-P[S.heel].y,Math.abs(P[S.t].x-P[S.heel].x)+1e-6)*R2D},
  kneeMin:{label:"Front knee angle (smaller of both knees)",idx:["k"],both:true,f:P=>Math.min(ang3(P[23],P[25],P[27]),ang3(P[24],P[26],P[28]))},
 };
-export const COMP_LABEL={trunk:"Trunk lean",hipHike:"Hip hike",shrug:"Shoulder shrug",valgus:"Knee valgus (knee caving in)",lumbar:"Lumbar extension / back arching",fast:"Moving too fast",incomplete:"Incomplete range"};
+export const COMP_LABEL={balance:"Loss of balance (COM sway outside base of support)",trunk:"Trunk lean / posture",hipHike:"Hip hike",shrug:"Shoulder shrug",valgus:"Knee valgus (knee caving in)",lumbar:"Lumbar extension / back arching",fast:"Moving too fast",incomplete:"Incomplete range"};
 export const LIB=[
- {key:"squat",name:"Squat",metric:"knee",start:170,end:95,tempo:3,view:"side or front",trunkMax:45,comps:["trunk","valgus","fast","incomplete"],steps:["Feet shoulder-width apart","Sit back, chest up","Knees over toes, not inwards","Stand fully upright"],reps:10,sets:3,rest:60},
- {key:"sts",name:"Sit-to-stand",metric:"knee",start:95,end:165,tempo:3,view:"side",trunkMax:50,comps:["trunk","valgus","fast","incomplete"],steps:["Sit at front of a firm chair","Feet back, lean forward","Stand up fully without hands","Sit down slowly"],reps:10,sets:2,rest:60},
+ {key:"squat",name:"Squat",metric:"knee",start:170,end:95,tempo:3,view:"side or front",trunkMax:45,comps:["balance","trunk","valgus","fast","incomplete"],steps:["Feet shoulder-width apart","Sit back, chest up","Knees over toes, not inwards","Stand fully upright"],reps:10,sets:3,rest:60},
+ {key:"sts",name:"Sit-to-stand",metric:"knee",start:95,end:165,tempo:3,view:"side",trunkMax:50,comps:["balance","trunk","valgus","fast","incomplete"],steps:["Sit at front of a firm chair","Feet back, lean forward","Stand up fully without hands","Sit down slowly"],reps:10,sets:2,rest:60},
  {key:"shflex",name:"Shoulder flexion",metric:"shoulder",start:25,end:150,tempo:4,view:"side",trunkMax:12,comps:["trunk","lumbar","shrug","fast","incomplete"],steps:["Stand tall, thumb up","Raise arm forwards and up","Do not arch your back","Lower slowly"],reps:10,sets:2,rest:45},
  {key:"shabd",name:"Shoulder abduction",metric:"shoulder",start:25,end:150,tempo:4,view:"front",trunkMax:10,comps:["trunk","shrug","fast","incomplete"],steps:["Stand facing the camera","Raise arm out to the side","Keep shoulder down, no shrug","Lower slowly"],reps:10,sets:2,rest:45},
  {key:"elflex",name:"Elbow flexion",metric:"elbow",start:155,end:55,tempo:3,view:"side",trunkMax:12,comps:["trunk","shrug","fast","incomplete"],steps:["Elbow by your side","Bend elbow fully","Straighten fully","Keep upper arm still"],reps:12,sets:2,rest:45},
  {key:"knext",name:"Seated knee extension",metric:"knee",start:95,end:165,tempo:4,view:"side",trunkMax:25,comps:["trunk","fast","incomplete"],steps:["Sit tall on a chair","Straighten knee fully","Hold 2 seconds","Lower slowly"],reps:10,sets:2,rest:45},
  {key:"slr",name:"Straight leg raise",metric:"hipFlex",start:5,end:40,tempo:4,view:"side (lying)",trunkMax:0,comps:["fast","incomplete"],steps:["Lie on back, other knee bent","Tighten thigh, knee straight","Lift leg to the other knee height","Lower slowly"],reps:10,sets:2,rest:45},
- {key:"hipabd",name:"Standing hip abduction",metric:"hipAbd",start:4,end:25,tempo:3,view:"front",trunkMax:10,comps:["trunk","hipHike","fast","incomplete"],steps:["Stand tall, hold a support","Lift leg out to the side","Toes forward, trunk upright","Lower slowly"],reps:10,sets:2,rest:45},
- {key:"heel",name:"Heel raise",metric:"heel",start:5,end:22,tempo:3,view:"side",trunkMax:12,comps:["trunk","fast","incomplete"],steps:["Stand holding a support","Rise up onto your toes","Hold 1 second","Lower slowly"],reps:15,sets:2,rest:45},
- {key:"lunge",name:"Lunge",metric:"kneeMin",start:165,end:100,tempo:3,view:"side",trunkMax:20,comps:["trunk","valgus","fast","incomplete"],steps:["Step forward","Lower back knee towards floor","Front knee over ankle","Push back up"],reps:8,sets:2,rest:60},
+ {key:"hipabd",name:"Standing hip abduction",metric:"hipAbd",start:4,end:25,tempo:3,view:"front",trunkMax:10,comps:["balance","trunk","hipHike","fast","incomplete"],steps:["Stand tall, hold a support","Lift leg out to the side","Toes forward, trunk upright","Lower slowly"],reps:10,sets:2,rest:45},
+ {key:"heel",name:"Heel raise",metric:"heel",start:5,end:22,tempo:3,view:"side",trunkMax:12,comps:["balance","trunk","fast","incomplete"],steps:["Stand holding a support","Rise up onto your toes","Hold 1 second","Lower slowly"],reps:15,sets:2,rest:45},
+ {key:"lunge",name:"Lunge",metric:"kneeMin",start:165,end:100,tempo:3,view:"side",trunkMax:20,comps:["balance","trunk","valgus","fast","incomplete"],steps:["Step forward","Lower back knee towards floor","Front knee over ankle","Push back up"],reps:8,sets:2,rest:60},
  {key:"bridge",name:"Bridge",metric:"hip",start:125,end:165,tempo:3,view:"side (lying)",trunkMax:0,comps:["lumbar","fast","incomplete"],steps:["Lie on back, knees bent","Squeeze buttocks","Lift hips in line with knees","Do not over-arch, lower slowly"],reps:10,sets:2,rest:45},
- {key:"minisq",name:"Mini-squat",metric:"knee",start:170,end:135,tempo:3,view:"side or front",trunkMax:30,comps:["trunk","valgus","fast","incomplete"],steps:["Hold a support","Bend knees slightly","Knees over toes","Stand up straight"],reps:12,sets:2,rest:45},
+ {key:"minisq",name:"Mini-squat",metric:"knee",start:170,end:135,tempo:3,view:"side or front",trunkMax:30,comps:["balance","trunk","valgus","fast","incomplete"],steps:["Hold a support","Bend knees slightly","Knees over toes","Stand up straight"],reps:12,sets:2,rest:45},
 ];
 export function pickSide(P,metric,pref){if(pref==="L"||pref==="R")return pref;const m=METRICS[metric];if(m.both)return "R";
  const sc=s=>m.idx.reduce((a,k)=>a+P[SIDE[s][k]].v,0);return sc("R")>=sc("L")?"R":"L"}
@@ -54,8 +54,8 @@ export function compFrame(P,ex,base){const out=[],fr=isFrontal(P);const sm=mid(P
   if(w.includes("shrug")){const es=(dist(P[7],P[11])+dist(P[8],P[12]))/2/(dist(P[11],P[12])||1);if(es<base.es*0.8)out.push("shrug")}
   if(w.includes("hipHike")){let p=Math.atan2(P[24].y-P[23].y,P[24].x-P[23].x)*R2D;let d=Math.abs(p-base.pel);if(d>180)d=360-d;if(d>6)out.push("hipHike")}
  }
- if(fr&&w.includes("valgus")){const mx=hm.x;for(const s of ["L","R"]){const S=SIDE[s],h=P[S.h],k=P[S.k],a=P[S.a];const L=dist(h,a)||1;const t=(k.y-h.y)/((a.y-h.y)||1);const lx=h.x+(a.x-h.x)*t;
-   const inward=(k.x-lx)*Math.sign(mx-h.x||1);if(ang3(h,k,a)<160&&inward/L>0.12){out.push("valgus");break}}}
+ if(fr&&w.includes("valgus")){const kw=Math.abs(P[25].x-P[26].x),aw=Math.abs(P[27].x-P[28].x)||1;const bent=Math.min(ang3(P[23],P[25],P[27]),ang3(P[24],P[26],P[28]))<150;if(bent&&aw>20&&kw/aw<0.7)out.push("valgus")}
+ if(fr&&w.includes("balance")){const am=mid(P[27],P[28]),bw=Math.max(dist(P[27],P[28]),dist(P[11],P[12])*.6)||1;if(P[27].v>.4&&P[28].v>.4&&Math.abs(hm.x-am.x)/bw>0.75)out.push("balance")}
  if(w.includes("lumbar")){if(ex.metric==="hip"){ // bridge: hips pushed above shoulder-knee line
    for(const s of ["L","R"]){const S=SIDE[s];if(P[S.h].v<.4)continue;const a=P[S.s],b=P[S.k],h=P[S.h];const lineY=a.y+(b.y-a.y)*((h.x-a.x)/((b.x-a.x)||1));if((lineY-h.y)/(dist(a,b)||1)>0.12){out.push("lumbar");break}}}
   else{const em=mid(P[7],P[8]);const f=Math.sign(P[0].x-em.x)||1;if((sm.x-hm.x)*f<0&&ta>8)out.push("lumbar")}}
@@ -91,3 +91,19 @@ export function scoreRep(rep,ex,ref){const curve=normCurve(rep.samples,ex.start,
  const acc=Math.max(0,Math.min(100,0.5*shape+0.3*romAch*100+0.2*tempo-5*[...comps].filter(c=>c!=="incomplete"&&c!=="fast").length));
  return {acc:Math.round(acc),shape:Math.round(shape),romPct:Math.round(romAch*100),tempo:Math.round(tempo),rom:Math.round(rom),peak:Math.round(rep.peak),dur:+rep.dur.toFixed(1),comps:[...comps],target}}
 export const SKEL=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,29],[29,31],[27,31],[28,30],[30,32],[28,32]];
+
+// ---- rep classification: correct only if ROM, trajectory similarity, tempo and compensations all pass ----
+export function exDefaults(e,ref){const b=ref&&!ref.synthetic&&ref.dur?ref.dur:(e.ref&&!e.ref.synthetic&&e.ref.dur?e.ref.dur:(+e.tempo||3));const n=v=>v===""||v==null||isNaN(+v)?null:+v;
+ return {romThr:n(e.romThr)??90,simThr:n(e.simThr)??60,tMin:n(e.tMin)??+(b*0.6).toFixed(1),tMax:n(e.tMax)??+(b*2.5).toFixed(1)}}
+export function classify(sc,e,ref){const d=exDefaults(e,ref);const why=[];
+ if(sc.romPct<d.romThr)why.push("rom");
+ if(sc.shape<d.simThr)why.push("shape");
+ if(sc.dur<d.tMin)why.push("fast");else if(sc.dur>d.tMax)why.push("slow");
+ for(const c of sc.comps)if(c!=="fast"&&c!=="incomplete")why.push(c);
+ return {ok:!why.length,why}}
+// frame check: is the body (the landmarks this exercise needs) fully and safely in view?
+const NEED={knee:[23,24,25,26,27,28],hip:[11,12,23,24,25,26],hipFlex:[11,12,23,24,27,28],hipAbd:[11,12,23,24,27,28],shoulder:[11,12,13,14,23,24],elbow:[11,12,13,14,15,16],heel:[27,28,29,30,31,32],kneeMin:[23,24,25,26,27,28]};
+export function frameCheck(P,metric,W,H){if(!P)return "nobody";const idx=NEED[metric]||NEED.knee;const vis=idx.filter(i=>P[i].v>.45).length;
+ const edge=idx.some(i=>P[i].v>.2&&(P[i].x<W*.01||P[i].x>W*.99||P[i].y<H*.01||P[i].y>H*.99));
+ if(vis<idx.length*.5){const torso=[11,12,23,24].filter(i=>P[i].v>.5).length;return torso>=3?"stepback":"nobody"}
+ if(edge)return "stepback";return "ok"}

@@ -133,7 +133,7 @@ function update(){draw();renderFindings()}
 function draw(lmOverride){const c=ctx;c.setTransform(1,0,0,1,0,0);c.fillStyle="#0a0a0a";c.fillRect(0,0,cv.width,cv.height);
  const src=S.live?video:S.src;if(!src)return;const v=S.v,s=v.s;c.setTransform(dpr*s,0,0,dpr*s,dpr*v.tx,dpr*v.ty);c.drawImage(src,0,0,S.W,S.H);
  const lw=1/s,lm=lmOverride||S.lm;
- if(S.grid){c.strokeStyle="rgba(0,255,255,.35)";c.lineWidth=lw;const st=S.H/20;for(let x=(S.plumb||0)%st;x<S.W;x+=st){c.beginPath();c.moveTo(x,0);c.lineTo(x,S.H);c.stroke()}for(let y=0;y<S.H;y+=st){c.beginPath();c.moveTo(0,y);c.lineTo(S.W,y);c.stroke()}}
+ if(S.grid)drawGrid(c,lw,lm);
  if(S.showPlumb&&S.plumb!=null&&!S.live){c.strokeStyle="#ff2d55";c.lineWidth=2.5*lw;c.setLineDash([10*lw,6*lw]);c.beginPath();c.moveTo(S.plumb,0);c.lineTo(S.plumb,S.H);c.stroke();c.setLineDash([]);
   c.fillStyle="#ff2d55";c.beginPath();c.arc(S.plumb,14*lw,9*lw,0,7);c.fill();c.font=(12*lw)+"px system-ui";c.fillText("plumb",S.plumb+12*lw,18*lw)}
  if(lm&&S.skel){c.lineCap="round";c.lineWidth=3*lw;
@@ -148,6 +148,33 @@ function draw(lmOverride){const c=ctx;c.setTransform(1,0,0,1,0,0);c.fillStyle="#
   c.setTransform(dpr,0,0,dpr,0,0);c.strokeStyle="#ff3b30";c.lineWidth=1;c.beginPath();c.moveTo(lx-R,ly);c.lineTo(lx+R,ly);c.moveTo(lx,ly-R);c.lineTo(lx,ly+R);c.stroke();c.restore();
   c.setTransform(dpr,0,0,dpr,0,0);c.beginPath();c.arc(lx,ly,R,0,7);c.strokeStyle="#fff";c.lineWidth=3;c.stroke()}
 }
+// ---------- posture grid ----------
+const GD={on:false,unit:"div",div:20,cm:5,height:170,opacity:.45,color:"#00e5ff",axes:true,align:"plumb",wm:"Posture Analysis",wmOn:true};
+try{Object.assign(GD,JSON.parse(localStorage.getItem("posture_grid")||"{}"))}catch(e){}
+S.grid=GD.on;window.__GD=GD;
+function gridGeom(lm){let floor=S.H,top=0,pxcm=null;
+ if(lm){const fy=Math.max(lm[29].y,lm[30].y,lm[31].y,lm[32].y,lm[27].y,lm[28].y);const ey=Math.min(lm[7].y,lm[8].y,lm[0].y);
+  if(fy>ey){floor=Math.min(S.H,fy+3);const stature=(fy-ey)*1.09;pxcm=stature/(GD.height||170);top=floor-stature}}
+ let st=GD.unit==="cm"&&pxcm?GD.cm*pxcm:(GD.unit==="cm"?S.H/(GD.height||170)*GD.cm:S.H/GD.div);st=Math.max(st,4);
+ let x0=S.W/2;if(GD.align==="plumb"&&S.plumb!=null&&!S.live)x0=S.plumb;else if(GD.align!=="center"&&lm)x0=(lm[27].x+lm[28].x)/2;else if(GD.align==="plumb"&&lm)x0=(lm[27].x+lm[28].x)/2;
+ return {st,x0,floor,pxcm}}
+function hexA(h,a){const n=parseInt(h.slice(1),16);return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")"}
+function drawGrid(c,lw,lm){const g=gridGeom(lm),{st,x0,floor}=g,o=GD.opacity,col=GD.color;c.save();
+ const kx0=Math.ceil(-x0/st),kx1=Math.floor((S.W-x0)/st),ky0=Math.ceil((floor-S.H)/st),ky1=Math.floor(floor/st);
+ for(let k=kx0;k<=kx1;k++){const x=x0+k*st;c.strokeStyle=hexA(col,k%5?o*.55:o);c.lineWidth=(k%5?1:2)*lw;c.beginPath();c.moveTo(x,0);c.lineTo(x,S.H);c.stroke()}
+ for(let k=ky0;k<=ky1;k++){const y=floor-k*st;c.strokeStyle=hexA(col,k%5?o*.55:o);c.lineWidth=(k%5?1:2)*lw;c.beginPath();c.moveTo(0,y);c.lineTo(S.W,y);c.stroke()}
+ // bold central plumb + horizontal references (floor, and level lines at shoulder/pelvis if detected)
+ c.strokeStyle=hexA(col,Math.min(1,o+.35));c.lineWidth=3.5*lw;c.beginPath();c.moveTo(x0,0);c.lineTo(x0,S.H);c.stroke();
+ c.beginPath();c.moveTo(0,floor);c.lineTo(S.W,floor);c.stroke();
+ if(lm){c.lineWidth=2.5*lw;c.setLineDash([8*lw,6*lw]);for(const y of [(lm[11].y+lm[12].y)/2,(lm[23].y+lm[24].y)/2,(lm[7].y+lm[8].y)/2]){c.beginPath();c.moveTo(0,y);c.lineTo(S.W,y);c.stroke()}c.setLineDash([])}
+ if(GD.axes){const fs=Math.max(9,Math.min(st*.45,22))*lw*Math.max(1,1/lw>1?1:1);c.font="bold "+(Math.min(st*.42,13*lw))+"px system-ui";c.fillStyle=hexA(col,Math.min(1,o+.4));c.textBaseline="top";
+  for(let k=kx0;k<kx1;k++){const x=x0+k*st,L=k>=0?String.fromCharCode(65+(k%26)):String.fromCharCode(65+((-k-1)%26)).toLowerCase();c.fillText(k>=0?"R"+L:"L"+L.toUpperCase(),x+2*lw,2*lw)}
+  c.textBaseline="bottom";for(let k=Math.max(ky0,1);k<=ky1;k++){const y=floor-k*st;c.fillText(String(k),2*lw,y-1*lw)}
+  if(GD.unit==="cm")c.fillText("□ = "+GD.cm+" cm"+(g.pxcm?" (scaled to "+GD.height+" cm stature)":" (approx.)"),2*lw,S.H-2*lw)}
+ if(GD.wmOn&&GD.wm){const fs=S.W/12;c.font="700 "+fs+"px system-ui";c.fillStyle=hexA("#ffffff",Math.min(.22,o*.35));c.textAlign="center";c.textBaseline="middle";
+  c.translate(S.W/2,S.H/2);c.rotate(-Math.PI/6);const tw=c.measureText(GD.wm).width+fs*2;
+  for(let y=-S.H;y<=S.H;y+=fs*3.2)for(let x=-S.W*1.2;x<=S.W*1.2;x+=tw)c.fillText(GD.wm,x+((Math.round(y/(fs*3.2))%2)?tw/2:0),y)}
+ c.restore()}
 function drawCustom(c,lw){const C=S.custom,P=C.pts;c.lineWidth=2.5*lw;c.strokeStyle="#bf5af2";c.fillStyle="#bf5af2";c.font="bold "+(13*lw)+"px system-ui";
  for(const [a,b] of C.lines){const p=P[a],q=P[b];c.beginPath();c.moveTo(p.x,p.y);c.lineTo(q.x,q.y);c.stroke();const t=Math.abs(tilt(p,q));c.fillText(f1(t)+"° to horiz",(p.x+q.x)/2+6*lw,(p.y+q.y)/2)}
  for(const [a,b,d] of C.angles){const p=P[a],q=P[b],r=P[d];c.strokeStyle="#64d2ff";c.beginPath();c.moveTo(p.x,p.y);c.lineTo(q.x,q.y);c.lineTo(r.x,r.y);c.stroke();c.fillStyle="#64d2ff";c.fillText(f1(ang3(p,q,r))+"°",q.x+8*lw,q.y-8*lw);c.fillStyle="#bf5af2";c.strokeStyle="#bf5af2"}
@@ -187,10 +214,17 @@ function tap(p){if(S.tool==="point"){pushUndo();const lb=prompt("Label for this 
 // ---------- tools ----------
 [...$("tools").querySelectorAll("[data-t]")].forEach(b=>b.onclick=()=>{S.tool=b.dataset.t;S.pend=[];$("tools").querySelectorAll("[data-t]").forEach(x=>x.classList.toggle("on",x===b));draw()});
 const tog=(id,k)=>{$(id).classList.toggle("on",S[k]);$(id).onclick=()=>{S[k]=!S[k];$(id).classList.toggle("on",S[k]);if(k==="showPlumb"&&S.plumb==null)S.plumb=defaultPlumb(S.lm);draw()}};
-tog("plumbBtn","showPlumb");tog("gridBtn","grid");tog("skelBtn","skel");
+tog("plumbBtn","showPlumb");tog("gridBtn","grid");$("gridBtn").addEventListener("click",()=>{GD.on=S.grid;saveGD();$("gridSet").style.display=S.grid?"block":"none"});tog("skelBtn","skel");
 $("fitBtn").onclick=()=>{fit();draw()};
 $("undoBtn").onclick=()=>{const u=S.undo.pop();if(!u)return;const o=JSON.parse(u);S.lm=o.lm;S.custom=o.custom;S.plumb=o.plumb;S.pend=[];update()};
 $("redetBtn").onclick=()=>{if(!S.src)return;pushUndo();S.lm=detectImage(S.src);S.plumb=defaultPlumb(S.lm);msg(S.lm?"Landmarks re-detected":"No person detected – mark manually");update()};
+function saveGD(){localStorage.setItem("posture_grid",JSON.stringify(GD))}
+function wireGrid(){const m={gUnit:"unit",gDiv:"div",gCm:"cm",gHt:"height",gOp:"opacity",gCol:"color",gAlign:"align",gWm:"wm"};
+ for(const [id,k] of Object.entries(m)){const el=$(id);el.value=GD[k];el.oninput=()=>{GD[k]=typeof GD[k]==="number"?+el.value:el.value;saveGD();upd()}}
+ $("gAxes").checked=GD.axes;$("gAxes").onchange=()=>{GD.axes=$("gAxes").checked;saveGD();upd()};$("gWmOn").checked=GD.wmOn;$("gWmOn").onchange=()=>{GD.wmOn=$("gWmOn").checked;saveGD();upd()};
+ const upd=()=>{$("gDivRow").style.display=GD.unit==="div"?"flex":"none";$("gCmRow").style.display=GD.unit==="cm"?"flex":"none";$("gOpV").textContent=Math.round(GD.opacity*100)+"%";draw()};
+ $("gridSet").style.display=S.grid?"block":"none";upd()}
+wireGrid();
 // ---------- camera / capture ----------
 let stream=null,rec=null;
 function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}S.live=false}

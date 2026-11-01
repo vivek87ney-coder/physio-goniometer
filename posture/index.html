@@ -4,6 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -47,7 +48,7 @@ td.v{font-weight:700;white-space:nowrap;text-align:right}tr.flag td{color:#ff9f0
 body.printing>*:not(#report){display:none!important}body.printing{background:#fff;padding:0}body.printing #report{display:block}
 @media print{body>*:not(#report){display:none!important}#report{display:block!important}body{background:#fff}}
 </style></head><body>
-<h1>Physio Posture Analysis</h1>
+<h1 style="display:flex;align-items:center;gap:8px"><img src="icon-192.png" alt="" width="32" height="32" style="border-radius:8px">Physio Posture Analysis</h1>
 <div id="pwaBar" style="display:flex;gap:8px;align-items:center;margin:6px 0;font-size:13px">
 <span id="offState" style="flex:1;color:#888">● Checking offline support…</span>
 <button id="installBtn" style="display:none;flex:none;font-size:14px;padding:8px 12px;background:#0a84ff">Install app</button></div>
@@ -70,6 +71,17 @@ body.printing>*:not(#report){display:none!important}body.printing{background:#ff
 <div class="tools" id="tools">
  <button data-t="move" class="on">✋ Move/Zoom</button><button data-t="point">＋ Point</button><button data-t="line">／ Line</button><button data-t="angle">∠ Angle</button>
  <button id="plumbBtn">Plumb</button><button id="gridBtn">Grid</button><button id="skelBtn" class="on">Skeleton</button><button id="fitBtn">Fit</button><button id="undoBtn">Undo</button><button id="redetBtn">Re-detect</button>
+</div>
+<div class="card" id="gridSet" style="display:none;font-size:14px">
+ <div class="row"><b style="color:#ffd400">Posture grid</b><select id="gUnit"><option value="div">Divisions (count)</option><option value="cm">cm squares</option></select></div>
+ <div class="row" id="gDivRow">Divisions over image height <select id="gDiv"><option>10</option><option>16</option><option>20</option><option>30</option><option>40</option></select></div>
+ <div class="row" id="gCmRow">Square <select id="gCm"><option value="2">2 cm</option><option value="5">5 cm</option><option value="10">10 cm</option></select> Patient height (cm) <input type="text" inputmode="numeric" id="gHt" style="flex:.5"></div>
+ <div class="row">Opacity <input type="range" id="gOp" min="0.1" max="1" step="0.05"><span id="gOpV" style="min-width:40px"></span></div>
+ <div class="row">Colour <select id="gCol"><option value="#00e5ff">Cyan</option><option value="#ffffff">White</option><option value="#ffd400">Yellow</option><option value="#30d158">Green</option><option value="#ff3b30">Red</option><option value="#000000">Black</option></select>
+  Centre on <select id="gAlign"><option value="plumb">Plumb line</option><option value="ankle">Ankle midpoint</option><option value="center">Image centre</option></select></div>
+ <div class="row"><label><input type="checkbox" id="gAxes"> Numbered / lettered axes</label><label><input type="checkbox" id="gWmOn"> Watermark</label></div>
+ <div class="row"><input type="text" id="gWm" placeholder="Watermark text (e.g. clinic name)" maxlength="40"></div>
+ <div style="font-size:12px;color:#888">cm squares are scaled from the detected stature (ear-to-floor × 1.09) and the patient height entered: approximate.</div>
 </div>
 <h2>App findings <span style="font-size:12px;color:#aaa;font-weight:400">(auto)</span></h2>
 <div class="disc">Automatic measurements are <b>screening estimates from 2D images</b> (MediaPipe pose landmarks). They depend on camera position and clothing and are not a diagnosis. Verify and correct landmarks manually.</div>

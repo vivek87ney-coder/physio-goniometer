@@ -115,7 +115,7 @@ export class Analyzer{
     S.stand_sit=ramp(kE-kS,35,60)*ramp(kE,60,80)*ng;
     S.squat=ramp(kMax-Math.max(kS,kE),35,60)*(1-ramp(sep,0.25,0.4))*(1-ramp(asym,15,30))*ng;
     S.lunge=ramp(kfMax,50,70)*ramp(sep,0.25,0.4)*ng;
-    S.sitting=ramp(kE,55,75)*ramp(hfE,50,70)*(1-ramp(motK,10,25))*ng;
+    S.sitting=ramp(kE,55,75)*ramp(hfE,50,70)*(1-ramp(motK,10,25))*ng; r.seatP=S.sitting;
     S.bend_lift=ramp(tfMax,40,65)*ng*(1-0.6*S.squat)*(1-S.sitting);
     S.overhead=ramp(wU,-0.02,0.08)*(1-lying);
     const armF=ramp(shF,45,70)*(1-ramp(shF,130,150))*(1-S.overhead);
@@ -143,7 +143,9 @@ export class Analyzer{
       let dirAG, base;
       if(closed){ dirAG=d.cc; const wbf=clamp(r.wb[s]*1.6);
         base=d.a==='knee'?wbf*(0.2+Math.sin(clamp(th,0,120)/D)):d.a==='hipFlex'?wbf*(0.2+0.8*Math.sin(clamp(th+Math.max(0,a.trunkFlex)*0.6,0,120)/D)):wbf*(0.45+ramp(th,0,30)*0.4);
-      } else { const key=d.a+s; if(Math.abs(om)>20&&Math.abs(elw)>8) this.dir[key]=Math.sign(elw*om); dirAG=this.dir[key]??d.def; base=Math.sin(clamp(el,0,180)/D)*d.mf*1.4; if(d.a==='hipAbd') base*=0.6; }
+      } else { const key=d.a+s; if(Math.abs(om)>20&&Math.abs(elw)>8) this.dir[key]=Math.sign(elw*om); dirAG=this.dir[key]??d.def; base=Math.sin(clamp(el,0,180)/D)*d.mf*1.4; if(d.a==='hipAbd') base*=0.6;
+        // seated/lying: thigh is supported by the seat, shank hangs passively -> no gravity-driven isometric hold
+        const seated=['sitting','lying'].includes(r.act)||(r.seatP||0)>0.5; if(seated&&!d.arm){ if(d.a==='hipFlex'||d.a==='hipAbd') base=0; else if(Math.abs(om)<18) base=Math.min(base,0.08); } }
       const I=clamp(base*(1+Math.abs(om)/250));
       const grp=g=>(g>0?d.pos:d.neg).map(m=>m+s);
       let act,type;
@@ -170,14 +172,16 @@ export class Analyzer{
       const qI=Math.max(...['rect_fem','vast_lat','vast_med'].map(m=>M[m+s]?.role==='agonist'?M[m+s].I:0));
       const pI=Math.max(...['gastroc','soleus'].map(m=>M[m+s]?.role==='agonist'?M[m+s].I:0));
       L['acl'+s]=clamp(0.55*ramp(30-k,0,30)*qI+0.35*ramp(v,3,15)+0.15*ramp(-k,0,5));
-      L['pcl'+s]=clamp(ramp(k,60,110)*(0.4+0.6*wb));
-      L['mcl'+s]=ramp(v,2,15); L['lcl'+s]=ramp(-v,2,15);
-      L['patellar'+s]=clamp(0.1+qI*ramp(k,5,90)*(0.5+0.5*wb)+0.3*ramp(k,30,100)*wb);
+      L['pcl'+s]=clamp(ramp(k,60,110)*wb*1.2+ramp(k,60,110)*0.6*pI*0);
+      const wbk=0.3+0.7*clamp(wb*1.5); L['mcl'+s]=ramp(v,4,18)*wbk; L['lcl'+s]=ramp(-v,4,18)*wbk;
+      L['patellar'+s]=clamp(qI*ramp(k,5,90)*(0.4+0.6*wb)+0.35*ramp(k,30,100)*wb);
       L['achilles'+s]=clamp(0.7*pI+0.3*ramp(df,0,20));
-      L['atfl'+s]=clamp(0.1+0.6*ramp(-df,10,35));
+      L['atfl'+s]=clamp(0.7*ramp(-df,10,35)*(0.4+0.6*wb));
       L['iliofemoral'+s]=ramp(-a['hipFlex'+s],0,20);
       const e=a['shElev'+s]; L['capsule'+s]=ramp(e,80,150); L['coracoacromial'+s]=clamp(1-Math.abs(e-90)/30)*0.9;
-    } r.ligaments=L; }
+    }
+    // load index 0-1 (relative, not % strain); temporal smoothing avoids frame-to-frame flicker
+    const P=this.Ls||{}; for(const k in L){ L[k]=P[k]==null?L[k]:P[k]*0.7+L[k]*0.3; } this.Ls={...L}; r.ligaments=L; }
   flags(r){ const a=r.a,f=[]; const act=r.act; const wbAct=['squat','sts','stand_sit','lunge','stair_up','stair_down','walking','running'];
     for(const s of ['L','R']){ if(wbAct.includes(act)&&r.contact[s]&&a['valgus'+s]>10&&a['knee'+s]>20) f.push('Dynamic knee valgus '+s); }
     const gaitA=['walking','running','stair_up','stair_down'];

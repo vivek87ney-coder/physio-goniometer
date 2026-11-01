@@ -1,0 +1,32 @@
+name: Posture vendor assets
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/posture-vendor.yml']
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch MediaPipe tasks-vision 1.2.0 + pose model, copy icons
+        run: |
+          set -e
+          mkdir -p posture/vendor/wasm
+          npm pack @mediapipe/tasks-vision@1.2.0
+          tar xzf mediapipe-tasks-vision-*.tgz
+          cp package/vision_bundle.mjs posture/vendor/
+          cp package/wasm/vision_wasm_internal.js package/wasm/vision_wasm_internal.wasm package/wasm/vision_wasm_nosimd_internal.js package/wasm/vision_wasm_nosimd_internal.wasm posture/vendor/wasm/
+          curl -sSL -o posture/vendor/pose_landmarker_lite.task https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task
+          cp camera/icon-192.png camera/icon-512.png camera/apple-touch-icon.png posture/
+          rm -rf package mediapipe-tasks-vision-*.tgz
+          ls -la posture posture/vendor posture/vendor/wasm
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add posture
+          git diff --cached --quiet || git commit -m "Add posture vendor assets (MediaPipe + model + icons)"
+          git pull --rebase
+          git push

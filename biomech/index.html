@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Physio 3D Biomechanics</title><meta name="theme-color" content="#000000"><link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#000;color:#eee;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px}
+.wrap{max-width:900px;margin:0 auto;padding:10px 12px 60px}h1{font-size:20px;margin:6px 0;display:flex;align-items:center;gap:8px}h1 img{width:30px;height:30px;border-radius:7px}
+h2{font-size:17px;margin:14px 0 6px}h3{font-size:15px;margin:10px 0 4px;color:#ccc}
+button,.btn{border:0;border-radius:10px;padding:10px 14px;font-size:15px;color:#fff;background:#333;cursor:pointer;margin:3px 2px;font-weight:600;display:inline-block;text-decoration:none}
+.b{background:#0a84ff}.y{background:#ffd400;color:#000}.g{background:#30d158;color:#000}.r{background:#ff3b30}.s{padding:6px 10px;font-size:13px}
+.card{background:#0d0d0d;border:1px solid #222;border-radius:12px;padding:12px;margin:8px 0}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.grow{flex:1}
+input,select,textarea{background:#1c1c1e;color:#fff;border:1px solid #333;border-radius:8px;padding:8px;font-size:15px;max-width:100%}textarea{width:100%}label{font-size:13px;color:#aaa;display:block;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}.grid input,.grid select{width:100%}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid #222;padding:5px;text-align:left}th{color:#9cf}
+.muted{color:#888;font-size:13px}.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;background:#222;margin:1px}.ok{color:#30d158}.warn{color:#ffd400}.bad{color:#ff6b6b}
+.note{background:#1a1500;border:1px solid #554400;color:#ffe680;border-radius:10px;padding:8px;font-size:13px;margin:8px 0}
+#stage{position:relative;width:100%;background:#111;border-radius:12px;overflow:hidden;border:4px solid #333}#stage video,#stage canvas{width:100%;display:block}#stage canvas{position:absolute;left:0;top:0;height:100%}
+.mir{transform:scaleX(-1)}#hud{position:absolute;left:0;right:0;top:0;padding:8px;display:flex;justify-content:space-between;pointer-events:none;text-shadow:0 1px 3px #000}
+.big{font-size:46px;font-weight:800;line-height:1}#cue{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:22px;font-weight:700;text-shadow:0 2px 4px #000;pointer-events:none}
+#arrow{position:absolute;right:12px;top:40%;font-size:64px;font-weight:900;pointer-events:none}#prog{position:absolute;left:8px;top:25%;bottom:25%;width:16px;background:#0008;border-radius:8px;overflow:hidden}#prog div{position:absolute;bottom:0;left:0;right:0;background:#0a84ff}
+#rest{position:absolute;inset:0;background:#000c;display:none;flex-direction:column;align-items:center;justify-content:center;font-size:22px}#rest b{font-size:80px}
+.chk label{display:flex;gap:8px;align-items:center;font-size:15px;color:#eee;margin:6px 0}.chk input{width:22px;height:22px}
+video.demo{width:100%;max-height:300px;background:#111;border-radius:10px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:6px;position:relative}.split #stage{border-width:2px}.c3d{width:100%;height:100%;min-height:320px;background:radial-gradient(#1a2333,#05070a);border-radius:12px;display:block;touch-action:none}
+.split.overlay{grid-template-columns:1fr}.split.overlay .c3d{position:absolute;inset:0;background:transparent;pointer-events:auto}
+@media(max-width:700px){.split{grid-template-columns:1fr}.c3d{min-height:360px}}
+.tb{margin:4px 0}.tg{display:inline-flex;gap:4px;align-items:center;font-size:13px;color:#ddd;background:#1c1c1e;border-radius:8px;padding:5px 8px;margin:0}.legend{font-size:12px;color:#bbb;margin:4px 0}
+.act{font-size:20px;font-weight:800;color:#ffd400}.bar{display:inline-block;width:80px;height:7px;background:#222;border-radius:4px;vertical-align:middle;overflow:hidden}.bar i{display:block;height:100%;background:#0a84ff}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.pgrid{grid-template-columns:1fr}}.pgrid h3{margin-top:6px}
+#stage video{max-height:70vh;object-fit:contain}.wrap{max-width:1200px}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script></head><body><div class="wrap">
+<h1><img src="icon-192.png" alt="">Physio 3D Biomechanics <span id="who" class="muted" style="margin-left:auto"></span></h1>
+<div id="pwaBar" style="display:flex;gap:8px;align-items:center;margin:6px 0;font-size:13px">
+<span id="offState" style="flex:1;color:#888">● Checking offline support…</span>
+<button id="installBtn" style="display:none;flex:none;font-size:14px;padding:8px 12px;background:#0a84ff">Install app</button></div>
+<div id="iosHint" style="display:none;font-size:13px;background:#1c1c1e;border:1px solid #444;border-radius:10px;padding:8px;margin:4px 0">On iPhone: tap <b>Share</b> then <b>Add to Home Screen</b> to install and use offline. <a href="#" id="iosX" style="color:#9cf">Dismiss</a></div>
+<div id="view"></div>
+<p class="muted" style="margin-top:30px">Muscle activity, contraction type and ligament loading are <b>estimates</b> inferred from camera-based 3D pose – not EMG or direct tissue measurement. Not a medical device. Data stays encrypted on this device. <a href="../" style="color:#9cf">Goniometer</a> · <a href="../posture/" style="color:#9cf">Posture</a> · <a href="../exercise/" style="color:#9cf">Exercise</a></p>
+</div>
+<input type="file" id="vidPick" accept="video/*" style="display:none">
+<script src="vendor/jspdf.umd.min.js"></script><script src="vendor/xlsx.full.min.js"></script>
+<script type="module" src="app.js"></script>
+<script>
+(function(){var st=document.getElementById("offState"),ib=document.getElementById("installBtn"),dp=null;
+function set(t,c){st.textContent="● "+t;st.style.color=c}
+function upd(){if(!navigator.onLine)set("Offline – working from cache","#ffd400")}
+function chk(){if(!("serviceWorker" in navigator)||!window.isSecureContext){set("Offline mode needs HTTPS / a modern browser","#ff6b6b");return}
+ navigator.serviceWorker.ready.then(function(){caches.keys().then(function(k){var ok=k.some(function(x){return x.indexOf("biomech-")===0});set(ok?"Offline ready (model cached)":"Preparing offline…",ok?"#30d158":"#888");upd()})})}
+if("serviceWorker" in navigator&&window.isSecureContext){navigator.serviceWorker.register("sw.js",{scope:"./"}).then(function(){chk()}).catch(function(e){set("Offline setup failed: "+e.message,"#ff6b6b")})}else chk();
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;ib.style.display=""});
+ib.onclick=function(){if(dp){dp.prompt();dp=null;ib.style.display="none"}};window.addEventListener("offline",upd);window.addEventListener("online",chk);
+var ios=/iphone|ipad|ipod/i.test(navigator.userAgent),sa=navigator.standalone;
+if(ios&&!sa&&!localStorage.getItem("iosHintX"))document.getElementById("iosHint").style.display="";
+document.getElementById("iosX").onclick=function(e){e.preventDefault();localStorage.setItem("iosHintX",1);document.getElementById("iosHint").style.display="none"};})();
+</script></body></html>

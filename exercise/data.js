@@ -15,8 +15,8 @@ async function deriveKey(pin,salt){const base=await crypto.subtle.importKey("raw
  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:150000,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
 async function encBytes(key,bytes){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,bytes);return {iv:b64(iv),ct:new Uint8Array(ct)}}
 async function decBytes(key,o){return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(o.iv)},key,o.ct))}
-export async function createProfile({name,role,pin}){const salt=crypto.getRandomValues(new Uint8Array(16)),key=await deriveKey(pin,salt);
- const p={id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,role,salt:b64(salt),check:await encBytes(key,enc.encode("ok:"+name)),created:new Date().toISOString()};
+export async function createProfile({name,role,pin,code}){const salt=crypto.getRandomValues(new Uint8Array(16)),key=await deriveKey(pin,salt);
+ const p={id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,role,code:code||null,salt:b64(salt),check:await encBytes(key,enc.encode("ok:"+name)),created:new Date().toISOString()};
  await T("profiles","readwrite",s=>s.put(p));return p}
 export async function deleteProfile(pid){await T("profiles","readwrite",s=>s.delete(pid));const db=await dbp;
  await new Promise(r=>{const t=db.transaction("docs","readwrite"),ix=t.objectStore("docs").index("pc"),c=ix.openCursor(IDBKeyRange.bound([pid,""],[pid,"\uffff"]));c.onsuccess=()=>{const cur=c.result;if(cur){cur.delete();cur.continue()}};t.oncomplete=r})}

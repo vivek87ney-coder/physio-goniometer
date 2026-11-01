@@ -16,10 +16,10 @@ jobs:
           mkdir -p exercise/vendor/wasm
           cp posture/vendor/vision_bundle.mjs posture/vendor/pose_landmarker_lite.task exercise/vendor/
           cp posture/vendor/wasm/* exercise/vendor/wasm/
-          npm pack jspdf@2.5.2 xlsx@0.18.5
-          mkdir jp xl && tar xzf jspdf-2.5.2.tgz -C jp && tar xzf xlsx-0.18.5.tgz -C xl
-          cp jp/package/dist/jspdf.umd.min.js xl/package/dist/xlsx.full.min.js exercise/vendor/
-          rm -rf jp xl *.tgz
+          npm pack jspdf@2.5.2 xlsx@0.18.5 qrcode-generator@1.4.4
+          mkdir jp xl qr && tar xzf jspdf-2.5.2.tgz -C jp && tar xzf xlsx-0.18.5.tgz -C xl && tar xzf qrcode-generator-1.4.4.tgz -C qr
+          cp jp/package/dist/jspdf.umd.min.js xl/package/dist/xlsx.full.min.js qr/package/qrcode.js exercise/vendor/
+          rm -rf jp xl qr *.tgz
           ls -la exercise/vendor exercise/vendor/wasm
       - name: Commit
         run: |

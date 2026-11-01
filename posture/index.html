@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Posture">
+<title>Physio Posture Analysis</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#000;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:env(safe-area-inset-top) 10px calc(14px + env(safe-area-inset-bottom))}
+h1{font-size:15px;margin:8px 0;color:#9cf}h2{font-size:15px;margin:12px 0 6px;color:#ffd400}
+.row{display:flex;gap:8px;margin:6px 0;align-items:center;flex-wrap:wrap}
+select,input[type=text],input[type=date],textarea{flex:1;font-size:16px;padding:10px;background:#111;color:#fff;border:2px solid #444;border-radius:10px;min-width:0}
+textarea{width:100%;min-height:70px}
+button{font-size:15px;font-weight:700;padding:12px 8px;border-radius:12px;border:0;flex:1;background:#2a2a2a;color:#fff;min-width:0}
+button:active{filter:brightness(1.4)}button:disabled{opacity:.4}
+.b{background:#0a84ff}.y{background:#ffd400;color:#000}.g{background:#30d158;color:#000}.r{background:#ff3b30}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0}
+.chips button{flex:none;padding:9px 12px;font-size:14px;background:#1c1c1e;border:2px solid #333}
+.chips button.on{background:#0a84ff;border-color:#0a84ff}.chips button.done::after{content:" ✓";color:#30d158}
+#stageWrap{position:relative;border:3px solid #222;border-radius:14px;overflow:hidden;background:#0a0a0a;touch-action:none}
+#stage{width:100%;height:62vh;display:block;touch-action:none}
+#stageMsg{position:absolute;left:8px;top:8px;font-size:13px;background:rgba(0,0,0,.65);padding:4px 8px;border-radius:8px;pointer-events:none}
+#rec{position:absolute;right:8px;top:8px;display:none;background:#ff3b30;padding:4px 8px;border-radius:8px;font-weight:700}
+video{display:none}
+.tools{display:flex;gap:6px;overflow-x:auto}.tools button{flex:none;padding:9px 11px;font-size:14px}.tools button.on{background:#ffd400;color:#000}
+input[type=range]{flex:1;accent-color:#ffd400}
+table.m{width:100%;border-collapse:collapse;font-size:14px}table.m td{border-bottom:1px solid #222;padding:6px 4px;vertical-align:top}
+td.v{font-weight:700;white-space:nowrap;text-align:right}tr.flag td{color:#ff9f0a}tr.flag td.v::before{content:"⚠ "}
+.disc{font-size:12px;color:#aaa;background:#1c1c1e;border-radius:8px;padding:6px 8px;margin:6px 0}
+.checks label{display:flex;gap:8px;align-items:center;padding:6px 0;font-size:15px;border-bottom:1px solid #1a1a1a}
+.checks input{width:22px;height:22px;accent-color:#ffd400}
+#graphs{width:100%;height:220px;display:none;background:#0a0a0a;border-radius:10px;margin-top:6px}
+.card{background:#0d0d0d;border:1px solid #222;border-radius:12px;padding:8px;margin:8px 0}
+.sess td{padding:6px 3px;border-bottom:1px solid #222;font-size:14px}.sess button{padding:7px 9px;font-size:13px}
+#report{display:none;background:#fff;color:#000;padding:16px}
+#report h1{color:#000;font-size:20px}#report h2{color:#000;border-bottom:2px solid #000;page-break-before:auto}
+#report img{max-width:100%;max-height:520px;display:block;margin:6px 0}
+#report table{width:100%;border-collapse:collapse;font-size:12px}#report td,#report th{border:1px solid #999;padding:3px 5px;text-align:left}
+#report .fl{color:#b00;font-weight:700}#report .view{page-break-inside:avoid;margin-bottom:18px}
+body.printing>*:not(#report){display:none!important}body.printing{background:#fff;padding:0}body.printing #report{display:block}
+@media print{body>*:not(#report){display:none!important}#report{display:block!important}body{background:#fff}}
+</style></head><body>
+<h1>Physio Posture Analysis</h1>
+<div id="pwaBar" style="display:flex;gap:8px;align-items:center;margin:6px 0;font-size:13px">
+<span id="offState" style="flex:1;color:#888">● Checking offline support…</span>
+<button id="installBtn" style="display:none;flex:none;font-size:14px;padding:8px 12px;background:#0a84ff">Install app</button></div>
+<div id="iosHint" style="display:none;font-size:13px;background:#1c1c1e;border:1px solid #444;border-radius:10px;padding:8px;margin:4px 0">On iPhone: tap <b>Share</b> then <b>Add to Home Screen</b> to install and use offline. <a href="#" id="iosX" style="color:#9cf">Dismiss</a></div>
+
+<div class="card" id="sessCard">
+ <div class="row"><input type="text" id="pt" placeholder="Patient initials / ID" maxlength="20" autocapitalize="characters"><input type="date" id="date" style="flex:.8"></div>
+ <div class="row"><select id="mode"><option value="standing">Static – Standing</option><option value="sitting">Static – Sitting</option><option value="running">Dynamic – Running</option><option value="walking">Dynamic – Walking</option></select><button class="g" id="newSess" style="flex:.7">New session</button></div>
+ <div id="sessInfo" style="font-size:13px;color:#aaa"></div>
+</div>
+
+<div class="chips" id="views"></div>
+<div class="row" style="font-size:13px;color:#ccc" id="viewHint"></div>
+<div id="stageWrap"><canvas id="stage"></canvas><div id="stageMsg">Loading pose model…</div><div id="rec">● REC</div></div>
+<video id="video" playsinline muted autoplay></video>
+<div class="row"><button class="b" id="liveBtn">Live camera</button><button class="y" id="capBtn">Capture</button><button id="upBtn">Upload</button>
+<input type="file" id="file" accept="image/*,video/*" hidden></div>
+<div class="row" id="clipRow" style="display:none"><button id="playBtn" style="flex:none;padding:10px 14px">▶</button><input type="range" id="scrub" min="0" max="0" value="0"><span id="frameLbl" style="font-size:13px;min-width:70px;text-align:right"></span><button id="anaBtn" class="b" style="flex:none;padding:10px">Analyze clip</button></div>
+<canvas id="graphs"></canvas>
+<div class="tools" id="tools">
+ <button data-t="move" class="on">✋ Move/Zoom</button><button data-t="point">＋ Point</button><button data-t="line">／ Line</button><button data-t="angle">∠ Angle</button>
+ <button id="plumbBtn">Plumb</button><button id="gridBtn">Grid</button><button id="skelBtn" class="on">Skeleton</button><button id="fitBtn">Fit</button><button id="undoBtn">Undo</button><button id="redetBtn">Re-detect</button>
+</div>
+<h2>App findings <span style="font-size:12px;color:#aaa;font-weight:400">(auto)</span></h2>
+<div class="disc">Automatic measurements are <b>screening estimates from 2D images</b> (MediaPipe pose landmarks). They depend on camera position and clothing and are not a diagnosis. Verify and correct landmarks manually.</div>
+<div id="findings"><p style="color:#666">Capture or upload an image to analyse.</p></div>
+<h2>Therapist notes</h2>
+<div class="checks" id="checks"></div>
+<textarea id="notes" placeholder="Free-text notes for this view"></textarea>
+<div class="row"><button class="g" id="saveView">Save view</button><button id="prevV">◀ Prev view</button><button id="nextV">Next view ▶</button></div>
+<h2>Sessions</h2>
+<div class="row"><button id="repBtn" class="b">Report (print / PDF)</button><button id="csvBtn">Export CSV</button></div>
+<div id="sessList"></div>
+<div id="report"></div>
+<script src="app.js" type="module"></script>
+<script>
+(function(){var st=document.getElementById("offState"),ib=document.getElementById("installBtn"),dp=null;
+function set(t,c){st.textContent="● "+t;st.style.color=c}
+function upd(){if(!navigator.onLine)set("Offline – running from cache","#ff9f0a")}
+window.addEventListener("online",function(){chk()});window.addEventListener("offline",upd);
+function chk(){if(!("serviceWorker" in navigator)||!window.isSecureContext){set("Offline mode needs HTTPS / a modern browser","#ff6b6b");return}
+ navigator.serviceWorker.ready.then(function(){caches.keys().then(function(k){var ok=k.some(function(x){return x.indexOf("posture-")===0});set(ok?"Offline ready (model cached)":"Preparing offline…",ok?"#30d158":"#888");upd()})})}
+if("serviceWorker" in navigator&&window.isSecureContext){navigator.serviceWorker.register("sw.js",{scope:"./"}).then(function(){chk()}).catch(function(e){set("Offline setup failed: "+e.message,"#ff6b6b")})}else chk();
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;ib.style.display=""});
+ib.onclick=function(){if(!dp)return;dp.prompt();dp.userChoice.finally(function(){dp=null;ib.style.display="none"})};
+var ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1),sa=navigator.standalone||matchMedia("(display-mode: standalone)").matches;
+if(ios&&!sa&&!localStorage.getItem("iosHintX"))document.getElementById("iosHint").style.display="";
+document.getElementById("iosX").onclick=function(e){e.preventDefault();localStorage.setItem("iosHintX","1");document.getElementById("iosHint").style.display="none"};
+})();
+</script>
+</body></html>

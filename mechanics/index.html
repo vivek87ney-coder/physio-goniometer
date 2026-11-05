@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en-GB"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="description" content="3D Movement Mechanics – interactive biomechanics lessons: kinematics, forces, energy, joint moments and muscles for common exercises.">
+<title>3D Movement Mechanics</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"../biomech/vendor/three.module.min.js"}}</script>
+</head><body>
+<header class="top">
+  <div class="brand"><img src="icon.svg" alt="" width="34" height="34"><div><div class="kicker" id="kicker">Movement Mechanics · lesson</div><h1 id="title">Hip thrust</h1></div></div>
+  <div class="topbtns"><button id="installBtn" class="ghost" hidden>⤓ Install</button><button id="camBtn" class="ghost">◉ Camera</button></div>
+</header>
+<main class="layout">
+  <section class="stage">
+    <div class="viewwrap">
+      <canvas id="three" aria-label="3D model"></canvas>
+      <div class="hud tl"><span class="pill" id="phasePill">Top hold</span><span class="pill dim" id="modelPill">70 kg body / 60 kg bar</span></div>
+      <div class="hud tr"><button id="viewBtn" class="pill btn">Side view 2-D</button><button id="resetCam" class="pill btn" title="Reset camera">⟲</button></div>
+      <div class="hud bl legend" id="legend">
+        <span><i style="background:var(--y)"></i>Gravity mg</span><span><i style="background:var(--t)"></i>Support / GRF</span><span><i class="cog"></i>CoG body+load</span><span><i style="background:#e8edf3"></i>CoG body</span><span><i style="background:#ff6fb5"></i>Moment arm</span>
+      </div>
+      <div id="estBadge" class="hud br est" hidden>CAMERA ESTIMATE</div>
+    </div>
+    <div class="transport">
+      <button id="playBtn" class="round" aria-label="Play/pause">❚❚</button>
+      <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Scrub">
+      <select id="speed" aria-label="Speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="toggles" id="toggles"></div>
+    <div class="angles" id="angles"></div>
+  </section>
+  <section class="side">
+    <div class="card inputs">
+      <label><span>Exercise</span><select id="exSel"></select></label>
+      <label><span>Body mass <b class="u">kg</b></span><input id="mass" type="number" min="30" max="200" step="1" value="70"></label>
+      <label><span>Height <b class="u">m</b></span><input id="height" type="number" min="1.2" max="2.2" step="0.01" value="1.75"></label>
+      <label><span>External load <b class="u">kg</b></span><input id="load" type="number" min="0" max="400" step="2.5" value="60"></label>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+    <article class="card lesson" id="lesson"></article>
+    <article class="card science" id="science"></article>
+    <div class="exports"><button id="pngBtn">⇩ PNG snapshot</button><button id="pdfBtn">⇩ PDF summary</button></div>
+    <p class="disc">Educational model; values illustrative. Rigid-segment sagittal model (de Leva 1996 segment parameters), quasi-static inverse statics with keyframed accelerations. Not a clinical measurement.</p>
+  </section>
+</main>
+<div id="camPanel" class="campanel" hidden>
+  <div class="camhead"><b>Camera mode</b><span class="est">ESTIMATES</span><button id="camClose" class="ghost">✕</button></div>
+  <div class="camrow"><button data-facing="user">Front camera</button><button data-facing="environment">Rear camera</button><label class="filebtn">Video file<input id="vidFile" type="file" accept="video/*" hidden></label></div>
+  <div class="camview"><video id="vid" playsinline muted></video><canvas id="lmc"></canvas></div>
+  <p class="small" id="camStatus">Film side-on (sagittal plane), whole body in frame. Pose model loads from this device (works offline after first load).</p>
+  <p class="small warn">Camera-derived angles, forces and moments are <b>estimates</b> from 2-D landmarks plus the rigid-body model. Measured ground reaction forces need force plates.</p>
+</div>
+<script type="module" src="app.js"></script>
+</body></html>
